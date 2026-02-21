@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  age           Int?
+  weight        Float?
+  height        Float?
+  fitnessGoal   String?
+  activityLevel String?
+  calorieTarget Int?
+  allergies     String[]
+  cuisines      String[]
+  weeklyBudget  Float?
+  learnedPrefs  Json?
+  mealPlans     MealPlan[]
+  feedback      RecipeFeedback[]
+  groceryLists  GroceryList[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Recipe {
+  id           String    @id @default(cuid())
+  name         String
+  cuisine      String
+  prepTime     Int
+  cookTime     Int
+  servings     Int
+  difficulty   String
+  calories     Int
+  protein      Float
+  carbs        Float
+  fats         Float
+  ingredients  Json
+  instructions Json
+  imageUrl     String?
+  tags         String[]
+  mealPlanSlots MealPlanSlot[]
+  feedback     RecipeFeedback[]
+  createdAt    DateTime  @default(now())
+}
+
+model MealPlan {
+  id            String    @id @default(cuid())
+  userId        String
+  weekStart     DateTime
+  totalCalories Int?
+  totalCost     Float?
+  isActive      Boolean   @default(true)
+  slots         MealPlanSlot[]
+  user          User      @relation(fields: [userId], references: [id])
+  createdAt     DateTime  @default(now())
+  @@index([userId, weekStart])
+}
+
+model MealPlanSlot {
+  id                String    @id @default(cuid())
+  mealPlanId        String
+  recipeId          String
+  dayOfWeek         Int
+  mealType          String
+  usesLeftovers     Boolean   @default(false)
+  hasLeftovers      Boolean   @default(false)
+  leftoverServings  Int?
+  mealPlan          MealPlan  @relation(fields: [mealPlanId], references: [id])
+  recipe            Recipe    @relation(fields: [recipeId], references: [id])
+  createdAt         DateTime  @default(now())
+  @@unique([mealPlanId, dayOfWeek, mealType])
+  @@index([mealPlanId])
+}
+
+model GroceryList {
+  id        String        @id @default(cuid())
+  userId    String
+  weekOf    DateTime
+  totalCost Float?
+  purchased Boolean       @default(false)
+  items     GroceryItem[]
+  user      User          @relation(fields: [userId], references: [id])
+  createdAt DateTime      @default(now())
+  @@index([userId, weekOf])
+}
+
+model GroceryItem {
+  id               String      @id @default(cuid())
+  groceryListId    String
+  name             String
+  quantity         String
+  category         String
+  price            Float?
+  store            String?
+  alternativePrice Float?
+  alternativeStore String?
+  checked          Boolean     @default(false)
+  groceryList      GroceryList @relation(fields: [groceryListId], references: [id])
+  createdAt        DateTime    @default(now())
+  @@index([groceryListId])
+}
+
+model RecipeFeedback {
+  id        String   @id @default(cuid())
+  userId    String
+  recipeId  String
+  liked     Boolean
+  user      User     @relation(fields: [userId], references: [id])
+  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+  createdAt DateTime @default(now())
+  @@unique([userId, recipeId])
+  @@index([userId, createdAt])
+}
