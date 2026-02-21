@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth"
 import { PrismaClient } from "@prisma/client"
 import { redirect } from "next/navigation"
+import GenerateButton from "@/components/generate-button"
 import {
   Flame, Wallet, UtensilsCrossed,
-  Sparkles, ShoppingCart, TrendingUp
+  ShoppingCart, TrendingUp
 } from "lucide-react"
 
 const prisma = new PrismaClient()
@@ -67,12 +68,7 @@ export default async function DashboardPage() {
         </div>
 
         {/* Generate button */}
-        <button
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all hover:shadow-xl hover:scale-105"
-          style={{ backgroundColor: "#E67E22" }}>
-          <Sparkles size={20} />
-          Generate New Plan
-        </button>
+          <GenerateButton />
       </div>
 
       {/* Stats Cards */}
@@ -204,12 +200,7 @@ export default async function DashboardPage() {
             <p className="mb-6" style={{ color: "#6B7280" }}>
               Click "Generate New Plan" to create your personalized weekly meal plan
             </p>
-            <button
-              className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold text-white mx-auto"
-              style={{ backgroundColor: "#E67E22" }}>
-              <Sparkles size={20} />
-              Generate with AI
-            </button>
+            <GenerateButton />
           </div>
         )}
       </div>
