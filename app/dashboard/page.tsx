@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { PrismaClient } from "@prisma/client"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import GenerateButton from "@/components/generate-button"
 import {
   Flame, Wallet, UtensilsCrossed,
@@ -161,17 +162,19 @@ export default async function DashboardPage() {
                       return (
                         <td key={dayIndex} className="py-2 px-1">
                           {slot ? (
-                            <div
-                              className="p-2 rounded-xl text-center cursor-pointer transition-all hover:shadow-md"
-                              style={{ backgroundColor: "#F0F7F7" }}>
-                              <p className="text-xs font-medium leading-tight"
-                                style={{ color: "#2D5F5D" }}>
-                                {slot.recipe.name}
-                              </p>
-                              <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-                                {slot.recipe.calories} cal
-                              </p>
-                            </div>
+                            <Link href={`/dashboard/recipe/${slot.recipe.id}`}>
+                              <div
+                                className="p-2 rounded-xl text-center cursor-pointer transition-all hover:shadow-md hover:scale-105"
+                                style={{ backgroundColor: "#F0F7F7" }}>
+                                <p className="text-xs font-medium leading-tight"
+                                  style={{ color: "#2D5F5D" }}>
+                                  {slot.recipe.name}
+                                </p>
+                                <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
+                                  {slot.recipe.calories} cal
+                                </p>
+                              </div>
+                            </Link>
                           ) : (
                             <div
                               className="p-2 rounded-xl text-center border-2 border-dashed"
