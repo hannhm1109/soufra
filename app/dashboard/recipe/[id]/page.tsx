@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client"
 import { redirect } from "next/navigation"
 import { Clock, Flame, ChefHat, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import FeedbackButtons from "@/components/feedback-buttons"
 
 const prisma = new PrismaClient()
 
@@ -79,6 +80,24 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
             <p className="text-sm" style={{ color: "#6B7280" }}>{label}</p>
           </div>
         ))}
+      </div>
+
+      {/* Feedback */}
+      <div
+        className="rounded-2xl p-6 mb-6 flex items-center justify-between"
+        style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+        <FeedbackButtons recipeId={recipe.id} />
+        
+        <div className="flex gap-2">
+          {recipe.tags.map((tag) => (
+            <span
+              key={tag}
+              className="text-xs px-3 py-1 rounded-full"
+              style={{ backgroundColor: "#F0F7F7", color: "#2D5F5D" }}>
+              {tag}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-6">
