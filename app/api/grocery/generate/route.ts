@@ -1,8 +1,6 @@
 import { auth } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-
-const prisma = new PrismaClient()
 
 // Static price database (DH) - we'll expand this later
 const priceDB: Record<string, { price: number; unit: string }> = {

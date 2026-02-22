@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import GenerateButton from "@/components/generate-button"
@@ -7,8 +7,6 @@ import {
   Flame, Wallet, UtensilsCrossed,
   ShoppingCart, TrendingUp
 } from "lucide-react"
-
-const prisma = new PrismaClient()
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -283,7 +281,7 @@ export default async function DashboardPage() {
                 Cuisines
               </span>
               <span className="font-semibold text-white">
-                {user.cuisines.slice(0, 2).join(", ")}
+                {user.cuisines.join(", ")}
               </span>
             </div>
           </div>

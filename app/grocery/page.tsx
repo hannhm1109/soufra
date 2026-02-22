@@ -1,11 +1,9 @@
 import { auth } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { ShoppingCart, Wallet } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
-
-const prisma = new PrismaClient()
 
 export default async function GroceryPage() {
   const session = await auth()

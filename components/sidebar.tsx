@@ -29,7 +29,7 @@ export default function Sidebar() {
 
       {/* Logo */}
       <div className="flex items-center gap-3 mb-10">
-        <Image src="/logo.png" alt="Soufra" width={40} height={40} />
+        <Image src="/logo.png" alt="Soufra" width={52} height={52} />
         <span
           className="text-2xl font-bold"
           style={{ color: "#D4A574", fontFamily: "var(--font-playfair)" }}>

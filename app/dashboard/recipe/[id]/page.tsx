@@ -1,11 +1,9 @@
 import { auth } from "@/lib/auth"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Clock, Flame, ChefHat, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import FeedbackButtons from "@/components/feedback-buttons"
-
-const prisma = new PrismaClient()
 
 export default async function RecipePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
