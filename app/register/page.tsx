@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { signIn } from "next-auth/react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -29,7 +30,18 @@ export default function RegisterPage() {
       setError(data.error || "Something went wrong")
       setLoading(false)
     } else {
-      router.push("/login?registered=true")
+      // Auto login after register then go to onboarding
+      const loginResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (loginResult?.ok) {
+        router.push("/onboarding")
+      } else {
+        router.push("/login?registered=true")
+      }
     }
   }
 
