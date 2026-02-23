@@ -5,6 +5,68 @@ import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+async function analyzeUserFeedback(userId: string) {
+  const feedback = await prisma.recipeFeedback.findMany({
+    where: { userId },
+    include: { recipe: true },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  })
+
+  if (feedback.length < 3) return null
+
+  const liked = feedback.filter(f => f.liked)
+  const disliked = feedback.filter(f => !f.liked)
+
+  // Cuisine preferences
+  const cuisineLikes: Record<string, number> = {}
+  liked.forEach(f => {
+    cuisineLikes[f.recipe.cuisine] = (cuisineLikes[f.recipe.cuisine] || 0) + 1
+  })
+  const favoriteCuisines = Object.entries(cuisineLikes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([cuisine]) => cuisine)
+
+  // Disliked cuisines
+  const cuisineDislikes: Record<string, number> = {}
+  disliked.forEach(f => {
+    cuisineDislikes[f.recipe.cuisine] = (cuisineDislikes[f.recipe.cuisine] || 0) + 1
+  })
+  const avoidCuisines = Object.entries(cuisineDislikes)
+    .filter(([, count]) => count >= 2)
+    .map(([cuisine]) => cuisine)
+
+  // Prep time preference
+  const avgLikedTime = liked.length > 0
+    ? liked.reduce((sum, f) => sum + f.recipe.prepTime + f.recipe.cookTime, 0) / liked.length
+    : null
+
+  const avgDislikedTime = disliked.length > 0
+    ? disliked.reduce((sum, f) => sum + f.recipe.prepTime + f.recipe.cookTime, 0) / disliked.length
+    : null
+
+  const prefersQuick = avgLikedTime && avgDislikedTime
+    ? avgLikedTime < avgDislikedTime - 15
+    : false
+
+  // Disliked recipe names to avoid
+  const dislikedNames = disliked.slice(0, 10).map(f => f.recipe.name)
+
+  // Liked recipe names to inspire
+  const likedNames = liked.slice(0, 10).map(f => f.recipe.name)
+
+  return {
+    favoriteCuisines,
+    avoidCuisines,
+    prefersQuick,
+    avgLikedTime,
+    dislikedNames,
+    likedNames,
+    totalRatings: feedback.length,
+  }
+}
+
 export async function POST() {
   const session = await auth()
   if (!session?.user?.email) {
@@ -17,6 +79,22 @@ export async function POST() {
 
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
+  // Analyze feedback patterns
+  const patterns = await analyzeUserFeedback(user.id)
+
+  // Build adaptive prompt section
+  let adaptiveSection = ""
+  if (patterns && patterns.totalRatings >= 3) {
+    adaptiveSection = `
+LEARNING FROM USER FEEDBACK (${patterns.totalRatings} ratings analyzed):
+${patterns.favoriteCuisines.length > 0 ? `- User LOVES: ${patterns.favoriteCuisines.join(", ")} cuisine → prioritize these` : ""}
+${patterns.avoidCuisines.length > 0 ? `- User DISLIKES: ${patterns.avoidCuisines.join(", ")} cuisine → minimize or avoid` : ""}
+${patterns.prefersQuick ? `- User prefers quick recipes (avg liked: ${Math.round(patterns.avgLikedTime!)}min) → keep meals under 40min` : ""}
+${patterns.likedNames.length > 0 ? `- Recipes user loved: ${patterns.likedNames.join(", ")} → generate similar style` : ""}
+${patterns.dislikedNames.length > 0 ? `- Recipes user disliked: ${patterns.dislikedNames.join(", ")} → avoid these exact recipes` : ""}
+Apply these patterns to make this plan more personalized than the last one.`
+  }
+
   const prompt = `You are a professional nutritionist specializing in Moroccan, French and Mediterranean cuisines.
 
 Generate a 7-day meal plan for this user:
@@ -25,13 +103,15 @@ Generate a 7-day meal plan for this user:
 - Fitness goal: ${user.fitnessGoal}
 - Allergies: ${user.allergies.length > 0 ? user.allergies.join(", ") : "none"}
 - Weekly budget: ${user.weeklyBudget} DH
+${adaptiveSection}
 
 RULES:
 1. Generate exactly 21 meals (7 days x 3 meals: breakfast, lunch, dinner)
 2. Respect allergies strictly - zero tolerance
 3. Match cuisine preferences
 4. Keep daily calories within 10% of target
-5. Use authentic Moroccan recipes when cuisine is moroccan (tagine, couscous, harira, msemen etc)
+5. Use authentic Moroccan recipes when cuisine is moroccan
+6. Never repeat the same recipe twice
 
 Respond ONLY with this exact JSON format, no other text:
 {
@@ -50,7 +130,7 @@ Respond ONLY with this exact JSON format, no other text:
       "carbs": 45,
       "fats": 12,
       "ingredients": ["200g oats", "1 banana", "250ml milk"],
-      "instructions": ["Step 1", "Step 2"],
+      "instructions": ["Step 1", "Step 2", "Step 3"],
       "tags": ["quick", "healthy"]
     }
   ]
@@ -119,7 +199,31 @@ Respond ONLY with this exact JSON format, no other text:
       })
     }
 
-    return NextResponse.json({ success: true, planId: mealPlan.id })
+    // Save learned preferences back to user
+    if (patterns) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          learnedPrefs: {
+            favoriteCuisines: patterns.favoriteCuisines,
+            avoidCuisines: patterns.avoidCuisines,
+            prefersQuick: patterns.prefersQuick,
+            totalRatings: patterns.totalRatings,
+            lastAnalyzed: new Date().toISOString(),
+          }
+        }
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      planId: mealPlan.id,
+      adapted: patterns !== null,
+      patterns: patterns ? {
+        totalRatings: patterns.totalRatings,
+        favoriteCuisines: patterns.favoriteCuisines,
+      } : null
+    })
 
   } catch (error) {
     console.error("Generation error:", error)
