@@ -1,14 +1,18 @@
 "use client"
 import { useState } from "react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const registered = searchParams.get("registered")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -114,6 +118,13 @@ export default function LoginPage() {
             Sign in to your account
           </p>
 
+          {registered && (
+            <div className="mb-4 p-3 rounded-lg text-sm text-green-700"
+              style={{ backgroundColor: "#DCFCE7" }}>
+              Account created! Sign in to continue.
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 rounded-lg text-sm text-red-600"
               style={{ backgroundColor: "#FEE2E2" }}>
@@ -148,20 +159,26 @@ export default function LoginPage() {
                 style={{ color: "#2C3E50" }}>
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 rounded-xl border outline-none transition-all"
-                style={{
-                  borderColor: "#E5E7EB",
-                  backgroundColor: "white",
-                }}
-                onFocus={(e) => e.target.style.borderColor = "#2D5F5D"}
-                onBlur={(e) => e.target.style.borderColor = "#E5E7EB"}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition-all pr-12"
+                  style={{ borderColor: "#E5E7EB", backgroundColor: "white" }}
+                  onFocus={(e) => e.target.style.borderColor = "#2D5F5D"}
+                  onBlur={(e) => e.target.style.borderColor = "#E5E7EB"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2"
+                  style={{ color: "#9CA3AF" }}>
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
