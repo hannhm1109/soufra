@@ -12,6 +12,8 @@ export default auth((req) => {
     nextUrl.pathname.startsWith("/grocery") ||
     nextUrl.pathname.startsWith("/favorites") ||
     nextUrl.pathname.startsWith("/settings") ||
+    nextUrl.pathname.startsWith("/history") ||
+    nextUrl.pathname.startsWith("/recipes") ||
     nextUrl.pathname.startsWith("/onboarding")
 
   // If logged in and trying to access auth pages → redirect to dashboard

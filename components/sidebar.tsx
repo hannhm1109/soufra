@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   ChefHat,
+  History,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/grocery", label: "Grocery List", icon: ShoppingCart },
   { href: "/favorites", label: "Favorites", icon: Heart },
+  { href: "/history", label: "History", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
