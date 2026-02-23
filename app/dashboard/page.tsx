@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import GenerateButton from "@/components/generate-button"
+import MealCard from "@/components/meal-card"
 import {
   Flame, Wallet, UtensilsCrossed,
   ShoppingCart, TrendingUp
@@ -160,24 +160,12 @@ export default async function DashboardPage() {
                       return (
                         <td key={dayIndex} className="py-2 px-1">
                           {slot ? (
-                            <Link href={`/dashboard/recipe/${slot.recipe.id}`}>
-                              <div
-                                className="p-2 rounded-xl text-center cursor-pointer transition-all hover:shadow-md hover:scale-105"
-                                style={{ backgroundColor: "#F0F7F7" }}>
-                                <p className="text-xs font-medium leading-tight"
-                                  style={{ color: "#2D5F5D" }}>
-                                  {slot.recipe.name}
-                                </p>
-                                <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
-                                  {slot.recipe.calories} cal
-                                </p>
-                              </div>
-                            </Link>
+                            <MealCard recipe={slot.recipe} />
                           ) : (
                             <div
-                              className="p-2 rounded-xl text-center border-2 border-dashed"
-                              style={{ borderColor: "#E5E7EB" }}>
-                              <p className="text-xs" style={{ color: "#D1D5DB" }}>Empty</p>
+                              className="p-3 rounded-xl border-2 border-dashed text-center"
+                              style={{ borderColor: "#E5E7EB", minHeight: "80px" }}>
+                              <p className="text-xs mt-4" style={{ color: "#D1D5DB" }}>Empty</p>
                             </div>
                           )}
                         </td>
