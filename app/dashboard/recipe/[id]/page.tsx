@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Clock, Flame, ChefHat, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import FeedbackButtons from "@/components/feedback-buttons"
 
 export default async function RecipePage({ params }: { params: Promise<{ id: string }> }) {
@@ -32,11 +33,21 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
       </Link>
 
       {/* Header */}
-      <div
-        className="rounded-2xl p-8 mb-6"
-        style={{ backgroundColor: "#2D5F5D" }}>
-        <div className="flex items-start justify-between">
-          <div>
+      {recipe.imageUrl ? (
+        <div className="relative rounded-2xl overflow-hidden mb-6 h-72">
+          <Image
+            src={recipe.imageUrl}
+            alt={recipe.name}
+            fill
+            className="object-cover"
+          />
+          {/* Gradient overlay */}
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(to top, rgba(45,95,93,0.97) 0%, rgba(45,95,93,0.6) 50%, transparent 100%)" }}
+          />
+          {/* Text pinned to bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-8">
             <span
               className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full mb-3 inline-block"
               style={{ backgroundColor: "rgba(212,165,116,0.3)", color: "#D4A574" }}>
@@ -47,9 +58,9 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
               style={{ fontFamily: "var(--font-playfair)" }}>
               {recipe.name}
             </h1>
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-4 mt-2">
               {[
-                { icon: Clock, label: `${recipe.prepTime + recipe.cookTime} min`, },
+                { icon: Clock, label: `${recipe.prepTime + recipe.cookTime} min` },
                 { icon: Flame, label: `${recipe.calories} cal` },
                 { icon: ChefHat, label: recipe.difficulty },
               ].map(({ icon: Icon, label }) => (
@@ -61,7 +72,32 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "#2D5F5D" }}>
+          <span
+            className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full mb-3 inline-block"
+            style={{ backgroundColor: "rgba(212,165,116,0.3)", color: "#D4A574" }}>
+            {recipe.cuisine}
+          </span>
+          <h1
+            className="text-3xl font-bold text-white mb-2"
+            style={{ fontFamily: "var(--font-playfair)" }}>
+            {recipe.name}
+          </h1>
+          <div className="flex items-center gap-4 mt-4">
+            {[
+              { icon: Clock, label: `${recipe.prepTime + recipe.cookTime} min` },
+              { icon: Flame, label: `${recipe.calories} cal` },
+              { icon: ChefHat, label: recipe.difficulty },
+            ].map(({ icon: Icon, label }) => (
+              <div key={label} className="flex items-center gap-1">
+                <Icon size={16} style={{ color: "#D4A574" }} />
+                <span className="text-sm text-white opacity-80">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Macros */}
       <div className="grid grid-cols-3 gap-4 mb-6">

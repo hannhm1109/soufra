@@ -1,6 +1,7 @@
 "use client"
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Search, Clock, Flame, ChefHat, Heart, SlidersHorizontal, X } from "lucide-react"
 
 interface Recipe {
@@ -15,6 +16,7 @@ interface Recipe {
   fats: number
   difficulty: string
   tags: string[]
+  imageUrl: string | null
 }
 
 interface Props {
@@ -300,6 +302,18 @@ export default function RecipeSearch({ recipes, feedbackMap }: Props) {
                             isDisliked ? "2px solid #FECACA" :
                             "2px solid transparent",
                   }}>
+
+                  {/* Image */}
+                  {recipe.imageUrl && (
+                    <div className="relative h-40 -mx-5 -mt-5 mb-4 rounded-t-2xl overflow-hidden">
+                      <Image
+                        src={recipe.imageUrl}
+                        alt={recipe.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
 
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
