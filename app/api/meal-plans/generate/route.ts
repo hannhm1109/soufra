@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
-import { getRecipeImage } from "@/lib/unsplash"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -182,9 +181,6 @@ Respond ONLY with this exact JSON format, no other text:
 
     // Create recipes and slots
     for (const meal of meals) {
-      // Fetch image from Unsplash
-      const imageUrl = await getRecipeImage(meal.name, meal.cuisine)
-
       const recipe = await prisma.recipe.create({
         data: {
           name: meal.name,
@@ -200,7 +196,7 @@ Respond ONLY with this exact JSON format, no other text:
           ingredients: meal.ingredients,
           instructions: meal.instructions,
           tags: meal.tags || [],
-          imageUrl: imageUrl,
+          imageUrl: null,
         }
       })
 

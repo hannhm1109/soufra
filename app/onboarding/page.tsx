@@ -9,48 +9,52 @@ import {
 } from "lucide-react"
 
 const steps = [
-  { id: 1, title: "About you", icon: User },
-  { id: 2, title: "Your goal", icon: Target },
-  { id: 3, title: "Cuisines", icon: UtensilsCrossed },
-  { id: 4, title: "Allergies", icon: AlertCircle },
-  { id: 5, title: "Budget", icon: Wallet },
+  { id: 1, title: "About you",   icon: User           },
+  { id: 2, title: "Your goal",   icon: Target         },
+  { id: 3, title: "Cuisines",    icon: UtensilsCrossed},
+  { id: 4, title: "Allergies",   icon: AlertCircle    },
+  { id: 5, title: "Budget",      icon: Wallet         },
 ]
 
 const fitnessGoals = [
-  { value: "lose_weight", label: "Lose Weight", emoji: "🔥", desc: "Calorie deficit plan" },
-  { value: "gain_muscle", label: "Gain Muscle", emoji: "💪", desc: "High protein plan" },
-  { value: "maintain", label: "Stay Healthy", emoji: "⚖️", desc: "Balanced nutrition" },
-  { value: "eat_better", label: "Eat Better", emoji: "🥗", desc: "Improve food quality" },
+  { value: "lose_weight", label: "Lose Weight",  emoji: "🔥", desc: "Calorie deficit plan" },
+  { value: "gain_muscle", label: "Gain Muscle",  emoji: "💪", desc: "High protein plan"    },
+  { value: "maintain",    label: "Stay Healthy", emoji: "⚖️", desc: "Balanced nutrition"   },
+  { value: "eat_better",  label: "Eat Better",   emoji: "🥗", desc: "Improve food quality" },
 ]
 
 const activityLevels = [
-  { value: "sedentary", label: "Sedentary", desc: "Little or no exercise" },
-  { value: "light", label: "Light", desc: "1-3 days/week" },
-  { value: "moderate", label: "Moderate", desc: "3-5 days/week" },
-  { value: "very_active", label: "Very Active", desc: "6-7 days/week" },
+  { value: "sedentary",   label: "Sedentary",   desc: "Little or no exercise" },
+  { value: "light",       label: "Light",        desc: "1-3 days/week"         },
+  { value: "moderate",    label: "Moderate",     desc: "3-5 days/week"         },
+  { value: "very_active", label: "Very Active",  desc: "6-7 days/week"         },
 ]
 
 const cuisineOptions = [
-  { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
-  { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
-  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
-  { value: "french", label: "French", emoji: "🇫🇷" },
-  { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
+  { value: "moroccan",      label: "Moroccan",          emoji: "🇲🇦" },
+  { value: "mediterranean", label: "Mediterranean",      emoji: "🫒" },
+  { value: "healthy",       label: "Healthy Essentials", emoji: "🥗" },
+  { value: "french",        label: "French",             emoji: "🇫🇷" },
+  { value: "middle_eastern",label: "Middle Eastern",     emoji: "🧆" },
 ]
 
 const allergyOptions = [
-  { value: "gluten", label: "Gluten", emoji: "🌾" },
-  { value: "lactose", label: "Lactose", emoji: "🥛" },
-  { value: "peanuts", label: "Peanuts", emoji: "🥜" },
+  { value: "gluten",    label: "Gluten",    emoji: "🌾" },
+  { value: "lactose",   label: "Lactose",   emoji: "🥛" },
+  { value: "peanuts",   label: "Peanuts",   emoji: "🥜" },
   { value: "shellfish", label: "Shellfish", emoji: "🦐" },
-  { value: "eggs", label: "Eggs", emoji: "🥚" },
-  { value: "soy", label: "Soy", emoji: "🫘" },
+  { value: "eggs",      label: "Eggs",      emoji: "🥚" },
+  { value: "soy",       label: "Soy",       emoji: "🫘" },
 ]
+
+const INPUT_CLASS =
+  "w-full px-3 py-3 rounded-xl border border-gray-200 bg-white outline-none text-center text-lg font-semibold transition-colors focus:border-[#2D5F5D] focus:ring-1 focus:ring-[#2D5F5D]"
 
 export default function OnboardingPage() {
   const router = useRouter()
   const { step, data, setStep, updateData } = useOnboardingStore()
   const [loading, setLoading] = useState(false)
+  const [direction, setDirection] = useState<"right" | "left">("right")
 
   const toggleArray = (field: "cuisines" | "allergies", value: string) => {
     const current = data[field]
@@ -58,6 +62,16 @@ export default function OnboardingPage() {
       ? current.filter((v) => v !== value)
       : [...current, value]
     updateData({ [field]: updated })
+  }
+
+  const goNext = () => {
+    setDirection("right")
+    setStep(step + 1)
+  }
+
+  const goBack = () => {
+    setDirection("left")
+    setStep(step - 1)
   }
 
   const handleFinish = async () => {
@@ -74,49 +88,96 @@ export default function OnboardingPage() {
     }
   }
 
+  const step1Valid = !!data.age && !!data.weight && !!data.height
+
+  // Full-screen loading overlay while finishing
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center" style={{ backgroundColor: "#FDFAF6" }}>
+        <div className="text-7xl mb-8" style={{ animation: "dotBounce 1.2s ease-in-out infinite" }}>🍽️</div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
+          Building your meal plan...
+        </h2>
+        <p className="text-sm mb-8" style={{ color: "#9CA3AF" }}>
+          Personalizing recipes just for you
+        </p>
+        <div className="flex gap-2">
+          {[0, 150, 300].map((delay) => (
+            <div
+              key={delay}
+              className="w-2.5 h-2.5 rounded-full dot-bounce"
+              style={{ backgroundColor: "#2D5F5D", animationDelay: `${delay}ms` }}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FDFAF6" }}>
 
       {/* Header */}
       <div className="p-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold" style={{ color: "#2D5F5D", fontFamily: "var(--font-playfair)" }}>
-            Soufra
-          </span>
-        </div>
-        <span className="text-sm" style={{ color: "#6B7280" }}>
-          Step {step} of 5
+        <span className="text-2xl font-bold" style={{ color: "#2D5F5D", fontFamily: "var(--font-playfair)" }}>
+          Soufra
+        </span>
+        <span className="text-sm font-medium px-3 py-1 rounded-full" style={{ backgroundColor: "#E8F0EF", color: "#2D5F5D" }}>
+          {step} / 5
         </span>
       </div>
 
-      {/* Progress bar */}
+      {/* Step indicator */}
       <div className="px-6 mb-8">
-        <div className="h-2 rounded-full" style={{ backgroundColor: "#E5E7EB" }}>
+        {/* Progress bar */}
+        <div className="h-1.5 rounded-full mb-5" style={{ backgroundColor: "#E5E7EB" }}>
           <div
-            className="h-2 rounded-full transition-all duration-500"
-            style={{
-              width: `${(step / 5) * 100}%`,
-              backgroundColor: "#2D5F5D"
-            }}
+            className="h-1.5 rounded-full transition-all duration-500"
+            style={{ width: `${(step / 5) * 100}%`, backgroundColor: "#2D5F5D" }}
           />
         </div>
-        <div className="flex justify-between mt-2">
-          {steps.map((s) => (
-            <span key={s.id} className="text-xs" style={{
-              color: step >= s.id ? "#2D5F5D" : "#9CA3AF",
-              fontWeight: step === s.id ? 600 : 400
-            }}>
-              {s.title}
-            </span>
-          ))}
+
+        {/* Icon step dots */}
+        <div className="flex justify-between">
+          {steps.map((s) => {
+            const Icon = s.icon
+            const done    = step > s.id
+            const current = step === s.id
+            return (
+              <div key={s.id} className="flex flex-col items-center gap-1.5">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300"
+                  style={{
+                    backgroundColor: done ? "#2D5F5D" : current ? "white" : "#F3F4F6",
+                    border: current ? "2px solid #2D5F5D" : "2px solid transparent",
+                    boxShadow: current ? "0 0 0 3px #E8F0EF" : "none",
+                  }}
+                >
+                  {done
+                    ? <Check size={16} color="white" strokeWidth={2.5} />
+                    : <Icon size={16} color={current ? "#2D5F5D" : "#9CA3AF"} />
+                  }
+                </div>
+                <span
+                  className="text-[10px] font-medium hidden sm:block"
+                  style={{ color: current ? "#2D5F5D" : done ? "#2D5F5D" : "#9CA3AF" }}
+                >
+                  {s.title}
+                </span>
+              </div>
+            )
+          })}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="w-full max-w-lg">
+      {/* Step content */}
+      <div className="flex-1 flex items-center justify-center px-6 overflow-hidden">
+        <div
+          key={step}
+          className={`w-full max-w-lg ${direction === "right" ? "step-enter-right" : "step-enter-left"}`}
+        >
 
-          {/* STEP 1 - Basic Info */}
+          {/* ── STEP 1 ── About you */}
           {step === 1 && (
             <div className="space-y-6">
               <div className="text-center mb-8">
@@ -127,16 +188,14 @@ export default function OnboardingPage() {
                 <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>
                   Tell us about yourself
                 </h2>
-                <p style={{ color: "#6B7280" }}>
-                  This helps us calculate your perfect calorie target
-                </p>
+                <p style={{ color: "#6B7280" }}>This helps us calculate your perfect calorie target</p>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Age", field: "age", placeholder: "25", unit: "yrs" },
-                  { label: "Weight", field: "weight", placeholder: "65", unit: "kg" },
-                  { label: "Height", field: "height", placeholder: "170", unit: "cm" },
+                  { label: "Age",    field: "age",    placeholder: "25",  unit: "yrs" },
+                  { label: "Weight", field: "weight", placeholder: "65",  unit: "kg"  },
+                  { label: "Height", field: "height", placeholder: "170", unit: "cm"  },
                 ].map(({ label, field, placeholder, unit }) => (
                   <div key={field}>
                     <label className="block text-sm font-medium mb-1" style={{ color: "#2C3E50" }}>
@@ -148,12 +207,9 @@ export default function OnboardingPage() {
                         placeholder={placeholder}
                         value={data[field as keyof typeof data] as string}
                         onChange={(e) => updateData({ [field]: e.target.value })}
-                        className="w-full px-3 py-3 rounded-xl border outline-none text-center text-lg font-semibold"
-                        style={{ borderColor: "#E5E7EB", backgroundColor: "white" }}
-                        onFocus={(e) => e.target.style.borderColor = "#2D5F5D"}
-                        onBlur={(e) => e.target.style.borderColor = "#E5E7EB"}
+                        className={INPUT_CLASS}
                       />
-                      <span className="absolute right-3 top-3 text-xs" style={{ color: "#9CA3AF" }}>
+                      <span className="absolute right-3 top-3.5 text-xs" style={{ color: "#9CA3AF" }}>
                         {unit}
                       </span>
                     </div>
@@ -163,7 +219,7 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* STEP 2 - Fitness Goal */}
+          {/* ── STEP 2 ── Fitness Goal */}
           {step === 2 && (
             <div>
               <div className="text-center mb-8">
@@ -171,53 +227,66 @@ export default function OnboardingPage() {
                   style={{ backgroundColor: "#2D5F5D" }}>
                   <Target size={32} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>
-                  What's your goal?
-                </h2>
-                <p style={{ color: "#6B7280" }}>We'll tailor your meal plan around it</p>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>What&apos;s your goal?</h2>
+                <p style={{ color: "#6B7280" }}>We&apos;ll tailor your meal plan around it</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
-                {fitnessGoals.map((goal) => (
-                  <button
-                    key={goal.value}
-                    onClick={() => updateData({ fitnessGoal: goal.value })}
-                    className="p-4 rounded-2xl border-2 text-left transition-all"
-                    style={{
-                      borderColor: data.fitnessGoal === goal.value ? "#2D5F5D" : "#E5E7EB",
-                      backgroundColor: data.fitnessGoal === goal.value ? "#F0F7F7" : "white",
-                    }}>
-                    <div className="text-3xl mb-2">{goal.emoji}</div>
-                    <div className="font-semibold" style={{ color: "#2C3E50" }}>{goal.label}</div>
-                    <div className="text-sm" style={{ color: "#6B7280" }}>{goal.desc}</div>
-                  </button>
-                ))}
+                {fitnessGoals.map((goal) => {
+                  const selected = data.fitnessGoal === goal.value
+                  return (
+                    <button
+                      key={goal.value}
+                      onClick={() => updateData({ fitnessGoal: goal.value })}
+                      className="p-4 rounded-2xl border-2 text-left transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      style={{
+                        borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                        backgroundColor: selected ? "#F0F7F7" : "white",
+                        transform: selected ? "scale(1.02)" : "scale(1)",
+                      }}
+                    >
+                      <div className="text-3xl mb-2">{goal.emoji}</div>
+                      <div className="font-semibold" style={{ color: "#2C3E50" }}>{goal.label}</div>
+                      <div className="text-sm" style={{ color: "#6B7280" }}>{goal.desc}</div>
+                      {selected && (
+                        <div className="mt-2 flex items-center gap-1 text-xs font-medium" style={{ color: "#2D5F5D" }}>
+                          <Check size={12} /> Selected
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
 
               <div>
-                <p className="text-sm font-medium mb-3" style={{ color: "#2C3E50" }}>
-                  Activity Level
-                </p>
+                <p className="text-sm font-medium mb-3" style={{ color: "#2C3E50" }}>Activity Level</p>
                 <div className="grid grid-cols-2 gap-3">
-                  {activityLevels.map((level) => (
-                    <button
-                      key={level.value}
-                      onClick={() => updateData({ activityLevel: level.value })}
-                      className="p-3 rounded-xl border-2 text-left transition-all"
-                      style={{
-                        borderColor: data.activityLevel === level.value ? "#2D5F5D" : "#E5E7EB",
-                        backgroundColor: data.activityLevel === level.value ? "#F0F7F7" : "white",
-                      }}>
-                      <div className="font-medium text-sm" style={{ color: "#2C3E50" }}>{level.label}</div>
-                      <div className="text-xs" style={{ color: "#6B7280" }}>{level.desc}</div>
-                    </button>
-                  ))}
+                  {activityLevels.map((level) => {
+                    const selected = data.activityLevel === level.value
+                    return (
+                      <button
+                        key={level.value}
+                        onClick={() => updateData({ activityLevel: level.value })}
+                        className="p-3 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
+                        style={{
+                          borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                          backgroundColor: selected ? "#F0F7F7" : "white",
+                        }}
+                      >
+                        <div className="font-medium text-sm flex items-center justify-between" style={{ color: "#2C3E50" }}>
+                          {level.label}
+                          {selected && <Check size={14} style={{ color: "#2D5F5D" }} />}
+                        </div>
+                        <div className="text-xs" style={{ color: "#6B7280" }}>{level.desc}</div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             </div>
           )}
 
-          {/* STEP 3 - Cuisines */}
+          {/* ── STEP 3 ── Cuisines */}
           {step === 3 && (
             <div>
               <div className="text-center mb-8">
@@ -225,34 +294,43 @@ export default function OnboardingPage() {
                   style={{ backgroundColor: "#2D5F5D" }}>
                   <UtensilsCrossed size={32} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>
-                  Favorite cuisines?
-                </h2>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Favorite cuisines?</h2>
                 <p style={{ color: "#6B7280" }}>Pick all that you love</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {cuisineOptions.map((cuisine) => (
-                  <button
-                    key={cuisine.value}
-                    onClick={() => toggleArray("cuisines", cuisine.value)}
-                    className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all"
-                    style={{
-                      borderColor: data.cuisines.includes(cuisine.value) ? "#2D5F5D" : "#E5E7EB",
-                      backgroundColor: data.cuisines.includes(cuisine.value) ? "#F0F7F7" : "white",
-                    }}>
-                    <span className="text-2xl">{cuisine.emoji}</span>
-                    <span className="font-medium" style={{ color: "#2C3E50" }}>{cuisine.label}</span>
-                    {data.cuisines.includes(cuisine.value) && (
-                      <Check size={16} className="ml-auto" style={{ color: "#2D5F5D" }} />
-                    )}
-                  </button>
-                ))}
+                {cuisineOptions.map((cuisine) => {
+                  const selected = data.cuisines.includes(cuisine.value)
+                  return (
+                    <button
+                      key={cuisine.value}
+                      onClick={() => toggleArray("cuisines", cuisine.value)}
+                      className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      style={{
+                        borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                        backgroundColor: selected ? "#F0F7F7" : "white",
+                        transform: selected ? "scale(1.02)" : "scale(1)",
+                      }}
+                    >
+                      <span className="text-2xl">{cuisine.emoji}</span>
+                      <span className="font-medium flex-1 text-left" style={{ color: "#2C3E50" }}>{cuisine.label}</span>
+                      <div
+                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                        style={{
+                          borderColor: selected ? "#2D5F5D" : "#D1D5DB",
+                          backgroundColor: selected ? "#2D5F5D" : "transparent",
+                        }}
+                      >
+                        {selected && <Check size={11} color="white" strokeWidth={3} />}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* STEP 4 - Allergies */}
+          {/* ── STEP 4 ── Allergies */}
           {step === 4 && (
             <div>
               <div className="text-center mb-8">
@@ -260,45 +338,58 @@ export default function OnboardingPage() {
                   style={{ backgroundColor: "#E67E22" }}>
                   <AlertCircle size={32} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>
-                  Any allergies?
-                </h2>
-                <p style={{ color: "#6B7280" }}>We'll make sure to avoid these completely</p>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Any allergies?</h2>
+                <p style={{ color: "#6B7280" }}>We&apos;ll make sure to avoid these completely</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
-                {allergyOptions.map((allergy) => (
-                  <button
-                    key={allergy.value}
-                    onClick={() => toggleArray("allergies", allergy.value)}
-                    className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all"
-                    style={{
-                      borderColor: data.allergies.includes(allergy.value) ? "#E67E22" : "#E5E7EB",
-                      backgroundColor: data.allergies.includes(allergy.value) ? "#FFF7F0" : "white",
-                    }}>
-                    <span className="text-2xl">{allergy.emoji}</span>
-                    <span className="font-medium" style={{ color: "#2C3E50" }}>{allergy.label}</span>
-                    {data.allergies.includes(allergy.value) && (
-                      <Check size={16} className="ml-auto" style={{ color: "#E67E22" }} />
-                    )}
-                  </button>
-                ))}
+                {allergyOptions.map((allergy) => {
+                  const selected = data.allergies.includes(allergy.value)
+                  return (
+                    <button
+                      key={allergy.value}
+                      onClick={() => toggleArray("allergies", allergy.value)}
+                      className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      style={{
+                        borderColor: selected ? "#E67E22" : "#E5E7EB",
+                        backgroundColor: selected ? "#FFF7F0" : "white",
+                        transform: selected ? "scale(1.02)" : "scale(1)",
+                      }}
+                    >
+                      <span className="text-2xl">{allergy.emoji}</span>
+                      <span className="font-medium flex-1 text-left" style={{ color: "#2C3E50" }}>{allergy.label}</span>
+                      <div
+                        className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                        style={{
+                          borderColor: selected ? "#E67E22" : "#D1D5DB",
+                          backgroundColor: selected ? "#E67E22" : "transparent",
+                        }}
+                      >
+                        {selected && <Check size={11} color="white" strokeWidth={3} />}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
 
               <button
                 onClick={() => updateData({ allergies: [] })}
-                className="w-full p-3 rounded-xl border-2 text-center transition-all"
+                className="w-full p-3 rounded-xl border-2 text-center transition-all duration-200 hover:shadow-sm active:scale-[0.98]"
                 style={{
                   borderColor: data.allergies.length === 0 ? "#2D5F5D" : "#E5E7EB",
                   backgroundColor: data.allergies.length === 0 ? "#F0F7F7" : "white",
-                  color: "#2C3E50"
-                }}>
-                No allergies ✓
+                  color: "#2C3E50",
+                }}
+              >
+                {data.allergies.length === 0
+                  ? <span className="flex items-center justify-center gap-2 font-medium"><Check size={16} style={{ color: "#2D5F5D" }} /> No allergies</span>
+                  : "None — I eat everything"
+                }
               </button>
             </div>
           )}
 
-          {/* STEP 5 - Budget */}
+          {/* ── STEP 5 ── Budget */}
           {step === 5 && (
             <div>
               <div className="text-center mb-8">
@@ -306,36 +397,40 @@ export default function OnboardingPage() {
                   style={{ backgroundColor: "#27AE60" }}>
                   <Wallet size={32} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>
-                  Weekly food budget?
-                </h2>
-                <p style={{ color: "#6B7280" }}>We'll keep your grocery list within budget</p>
+                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Weekly food budget?</h2>
+                <p style={{ color: "#6B7280" }}>We&apos;ll keep your grocery list within budget</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
                 {[
                   { value: "150", label: "150 DH", desc: "Budget friendly" },
-                  { value: "250", label: "250 DH", desc: "Balanced" },
-                  { value: "350", label: "350 DH", desc: "Comfortable" },
-                  { value: "500", label: "500 DH", desc: "Premium" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => updateData({ weeklyBudget: option.value })}
-                    className="p-4 rounded-2xl border-2 text-center transition-all"
-                    style={{
-                      borderColor: data.weeklyBudget === option.value ? "#27AE60" : "#E5E7EB",
-                      backgroundColor: data.weeklyBudget === option.value ? "#F0FFF4" : "white",
-                    }}>
-                    <div className="text-xl font-bold" style={{ color: "#2C3E50" }}>{option.label}</div>
-                    <div className="text-sm" style={{ color: "#6B7280" }}>{option.desc}</div>
-                  </button>
-                ))}
+                  { value: "250", label: "250 DH", desc: "Balanced"        },
+                  { value: "350", label: "350 DH", desc: "Comfortable"     },
+                  { value: "500", label: "500 DH", desc: "Premium"         },
+                ].map((option) => {
+                  const selected = data.weeklyBudget === option.value
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => updateData({ weeklyBudget: option.value })}
+                      className="p-4 rounded-2xl border-2 text-center transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      style={{
+                        borderColor: selected ? "#27AE60" : "#E5E7EB",
+                        backgroundColor: selected ? "#F0FFF4" : "white",
+                        transform: selected ? "scale(1.02)" : "scale(1)",
+                      }}
+                    >
+                      <div className="text-xl font-bold" style={{ color: "#2C3E50" }}>{option.label}</div>
+                      <div className="text-sm" style={{ color: "#6B7280" }}>{option.desc}</div>
+                      {selected && <div className="mt-1 text-xs font-medium" style={{ color: "#27AE60" }}>✓ Selected</div>}
+                    </button>
+                  )
+                })}
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: "#2C3E50" }}>
-                  Or enter custom amount
+                  Or enter a custom amount
                 </label>
                 <div className="relative">
                   <input
@@ -343,12 +438,9 @@ export default function OnboardingPage() {
                     placeholder="300"
                     value={data.weeklyBudget}
                     onChange={(e) => updateData({ weeklyBudget: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border outline-none text-lg"
-                    style={{ borderColor: "#E5E7EB", backgroundColor: "white" }}
-                    onFocus={(e) => e.target.style.borderColor = "#27AE60"}
-                    onBlur={(e) => e.target.style.borderColor = "#E5E7EB"}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-lg transition-colors focus:border-[#27AE60] focus:ring-1 focus:ring-[#27AE60]"
                   />
-                  <span className="absolute right-4 top-3 font-medium" style={{ color: "#6B7280" }}>DH</span>
+                  <span className="absolute right-4 top-3.5 font-medium" style={{ color: "#6B7280" }}>DH</span>
                 </div>
               </div>
             </div>
@@ -358,9 +450,10 @@ export default function OnboardingPage() {
           <div className="flex gap-4 mt-8">
             {step > 1 && (
               <button
-                onClick={() => setStep(step - 1)}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl border font-medium transition-all"
-                style={{ borderColor: "#E5E7EB", color: "#6B7280", backgroundColor: "white" }}>
+                onClick={goBack}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl border font-medium transition-all hover:shadow-sm active:scale-[0.97]"
+                style={{ borderColor: "#E5E7EB", color: "#6B7280", backgroundColor: "white" }}
+              >
                 <ChevronLeft size={18} />
                 Back
               </button>
@@ -368,20 +461,22 @@ export default function OnboardingPage() {
 
             {step < 5 ? (
               <button
-                onClick={() => setStep(step + 1)}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all"
-                style={{ backgroundColor: "#2D5F5D" }}>
+                onClick={goNext}
+                disabled={step === 1 && !step1Valid}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ backgroundColor: "#2D5F5D" }}
+              >
                 Continue
                 <ChevronRight size={18} />
               </button>
             ) : (
               <button
                 onClick={handleFinish}
-                disabled={loading}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all"
-                style={{ backgroundColor: loading ? "#6B7280" : "#E67E22" }}>
-                {loading ? "Setting up..." : "Let's go! 🍽️"}
-                {!loading && <ChevronRight size={18} />}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all active:scale-[0.98]"
+                style={{ backgroundColor: "#E67E22" }}
+              >
+                Let&apos;s go! 🍽️
+                <ChevronRight size={18} />
               </button>
             )}
           </div>

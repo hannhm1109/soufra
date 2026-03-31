@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { ShoppingCart, Wallet } from "lucide-react"
+import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
 
@@ -59,8 +59,9 @@ export default async function GroceryPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: "#2C3E50" }}>
-            Grocery List 🛒
+          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: "#2C3E50" }}>
+            Grocery List
+            <ShoppingCart size={22} style={{ color: "#2D5F5D" }} />
           </h1>
           <p style={{ color: "#6B7280" }}>
             Auto-generated from your weekly meal plan
@@ -92,13 +93,16 @@ export default async function GroceryPage() {
                 style={{ width: `${budgetPercent}%`, backgroundColor: budgetColor }}
               />
             </div>
-            <p className="text-sm" style={{ color: "#6B7280" }}>
+            <div className="flex items-center gap-1.5 text-sm" style={{
+              color: budgetPercent < 90 ? "#27AE60" : budgetPercent < 100 ? "#E67E22" : "#E74C3C"
+            }}>
               {budgetPercent < 90
-                ? `✅ You're ${(user.weeklyBudget! - groceryList.totalCost!).toFixed(0)} DH under budget!`
+                ? <><CheckCircle size={14} /> {(user.weeklyBudget! - groceryList.totalCost!).toFixed(0)} DH under budget</>
                 : budgetPercent < 100
-                ? `⚠️ Getting close to your budget`
-                : `❌ Over budget by ${(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH`}
-            </p>
+                ? <><AlertTriangle size={14} /> Getting close to your budget</>
+                : <><XCircle size={14} /> Over budget by {(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH</>
+              }
+            </div>
           </div>
 
           {/* Stats */}

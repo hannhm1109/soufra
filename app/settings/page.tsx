@@ -19,7 +19,7 @@ export default async function SettingsPage() {
     <div className="max-w-3xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-1" style={{ color: "#2C3E50" }}>
-          Settings ⚙️
+          Settings
         </h1>
         <p style={{ color: "#6B7280" }}>
           Update your preferences to get better meal plans

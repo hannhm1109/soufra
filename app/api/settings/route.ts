@@ -52,8 +52,7 @@ export async function POST(req: Request) {
       }
     })
 
-    revalidatePath("/dashboard")
-    revalidatePath("/settings")
+    revalidatePath("/", "layout")
 
     return NextResponse.json({ success: true })
   } catch (error) {

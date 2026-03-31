@@ -42,18 +42,21 @@ export default function Sidebar() {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-1 space-y-1">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
               <Link
                 key={href}
                 href={href}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 group"
                 style={{
                   backgroundColor: active ? "rgba(212,165,116,0.2)" : "transparent",
-                  color: active ? "#D4A574" : "rgba(255,255,255,0.7)",
-                }}>
+                  color: active ? "#D4A574" : "rgba(255,255,255,0.65)",
+                }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.08)" }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent" }}
+              >
                 <Icon size={20} />
                 <span className="font-medium">{label}</span>
               </Link>
@@ -61,23 +64,32 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Recipes link */}
+        {/* Browse Recipes */}
         <Link
           href="/recipes"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl mb-4 transition-all"
-          style={{
-            backgroundColor: "rgba(230,126,34,0.2)",
-            color: "#E67E22",
-          }}>
+          className="flex items-center gap-3 px-4 py-3 rounded-xl mb-3 transition-all duration-150"
+          style={{ backgroundColor: "rgba(230,126,34,0.2)", color: "#E67E22" }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(230,126,34,0.3)"}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(230,126,34,0.2)"}
+        >
           <ChefHat size={20} />
           <span className="font-medium">Browse Recipes</span>
         </Link>
 
-        {/* Logout */}
+        {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all w-full"
-          style={{ color: "rgba(255,255,255,0.5)" }}>
+          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-150 w-full text-left"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+          onMouseEnter={e => {
+            ;(e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.08)"
+            ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.8)"
+          }}
+          onMouseLeave={e => {
+            ;(e.currentTarget as HTMLElement).style.backgroundColor = "transparent"
+            ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.45)"
+          }}
+        >
           <LogOut size={20} />
           <span className="font-medium">Sign out</span>
         </button>

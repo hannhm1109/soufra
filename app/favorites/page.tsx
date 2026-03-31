@@ -36,8 +36,9 @@ export default async function FavoritesPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-1" style={{ color: "#2C3E50" }}>
-          Your Favorites ❤️
+        <h1 className="text-3xl font-bold mb-1 flex items-center gap-3" style={{ color: "#2C3E50" }}>
+          Your Favorites
+          <Heart size={22} fill="#E74C3C" style={{ color: "#E74C3C" }} />
         </h1>
         <p style={{ color: "#6B7280" }}>
           Recipes you loved - the AI uses these to improve your meal plans
@@ -80,7 +81,7 @@ export default async function FavoritesPage() {
               return (
                 <Link key={recipe.id} href={`/dashboard/recipe/${recipe.id}`}>
                   <div
-                    className="rounded-2xl p-6 cursor-pointer transition-all hover:shadow-md hover:scale-105"
+                    className="rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
                     style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
 
                     {/* Cuisine badge */}

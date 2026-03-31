@@ -1,7 +1,7 @@
 "use client"
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
-import { Calendar, ChevronDown, ChevronUp } from "lucide-react"
+import { Calendar, ChevronDown, ChevronUp, Sunrise, Sun, Moon, Flame } from "lucide-react"
 
 const cuisineEmojis: Record<string, string> = {
   moroccan: "🇲🇦",
@@ -16,10 +16,15 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const
 type MealType = typeof MEAL_TYPES[number]
 
+const mealTypeIcon: Record<MealType, React.ReactNode> = {
+  breakfast: <Sunrise size={14} />,
+  lunch:     <Sun     size={14} />,
+  dinner:    <Moon    size={14} />,
+}
 const mealTypeLabel: Record<MealType, string> = {
-  breakfast: "🌅 Breakfast",
-  lunch: "☀️ Lunch",
-  dinner: "🌙 Dinner",
+  breakfast: "Breakfast",
+  lunch:     "Lunch",
+  dinner:    "Dinner",
 }
 
 type Slot = {
@@ -180,11 +185,12 @@ export default function HistoryPlanCard({
               <button
                 key={meal}
                 onClick={() => setActiveMeal(meal)}
-                className="px-3 py-1.5 rounded-xl text-sm font-medium transition-all"
+                className="px-3 py-1.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5"
                 style={{
                   backgroundColor: activeMeal === meal ? "#2D5F5D" : "transparent",
                   color: activeMeal === meal ? "white" : "#6B7280",
                 }}>
+                {mealTypeIcon[meal]}
                 {mealTypeLabel[meal]}
               </button>
             ))}
@@ -218,8 +224,8 @@ export default function HistoryPlanCard({
                             }}>
                             {slot.recipe.name}
                           </p>
-                          <p style={{ color: "#E67E22", fontSize: "10px" }}>
-                            🔥 {slot.recipe.calories}
+                          <p className="flex items-center gap-0.5" style={{ color: "#E67E22", fontSize: "10px" }}>
+                            <Flame size={10} /> {slot.recipe.calories}
                           </p>
                         </div>
                       </Link>
