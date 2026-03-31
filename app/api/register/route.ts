@@ -4,31 +4,31 @@ import bcrypt from "bcryptjs"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
-  const { email, password, name } = await req.json()
+  try {
+    const { email, password, name } = await req.json()
 
-  if (!email || !password) {
-    return NextResponse.json(
-      { error: "Email and password required" },
-      { status: 400 }
-    )
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password required" }, { status: 400 })
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email } })
+    if (existing) {
+      return NextResponse.json({ error: "An account with this email already exists" }, { status: 400 })
+    }
+
+    const hashed = await bcrypt.hash(password, 12)
+    const user = await prisma.user.create({
+      data: { email, password: hashed, name },
+    })
+
+    sendWelcomeEmail(email, name || "").catch(() => {})
+
+    return NextResponse.json({ message: "User created!", userId: user.id })
+  } catch {
+    return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 })
   }
-
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) {
-    return NextResponse.json(
-      { error: "User already exists" },
-      { status: 400 }
-    )
-  }
-
-  const hashed = await bcrypt.hash(password, 12)
-
-  const user = await prisma.user.create({
-    data: { email, password: hashed, name },
-  })
-
-  // Fire and forget — don't block registration if email fails
-  sendWelcomeEmail(email, name || "").catch(console.error)
-
-  return NextResponse.json({ message: "User created!", userId: user.id })
 }

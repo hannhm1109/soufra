@@ -22,8 +22,10 @@ model User {
   allergies     String[]
   cuisines      String[]
   weeklyBudget  Float?
-  learnedPrefs  Json?
-  mealPlans     MealPlan[]
+  learnedPrefs       Json?
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  mealPlans          MealPlan[]
   feedback      RecipeFeedback[]
   groceryLists  GroceryList[]
   createdAt     DateTime  @default(now())
