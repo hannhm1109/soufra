@@ -66,7 +66,7 @@ export default function LoginPage() {
             Your AI nutrition companion
           </p>
           <p className="text-white opacity-60 text-sm max-w-xs mx-auto">
-            Personalized meal plans rooted in Moroccan & French cuisine tradition
+            Personalized meal plans rooted in Moroccan & Mediterranean cuisine tradition
           </p>
 
           {/* Stats */}

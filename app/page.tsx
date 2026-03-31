@@ -139,7 +139,7 @@ export default function LandingPage() {
                 className="text-xl leading-relaxed mb-8 max-w-lg"
                 style={{ color: "#6B7280" }}>
                 The first AI nutrition assistant that truly understands
-                <strong style={{ color: "#2C3E50" }}> Moroccan and French cuisine</strong>.
+                <strong style={{ color: "#2C3E50" }}> Moroccan and Mediterranean cuisine</strong>.
                 Personalized meal plans, smart grocery lists, real prices.
               </p>
 
@@ -162,7 +162,7 @@ export default function LandingPage() {
                     ))}
                   </div>
                   <p className="text-xs" style={{ color: "#6B7280" }}>
-                    Loved by food enthusiasts in Morocco & France
+                    Loved by food enthusiasts across Morocco & the Mediterranean
                   </p>
                 </div>
               </div>
@@ -296,7 +296,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
               { number: "21", label: "Meals per week", suffix: "" },
-              { number: "100", label: "Moroccan & French recipes", suffix: "+" },
+              { number: "100", label: "Moroccan & Mediterranean recipes", suffix: "+" },
               { number: "0", label: "Food waste goal", suffix: "" },
               { number: "30", label: "Seconds to generate", suffix: "s" },
             ].map(({ number, label, suffix }) => (
@@ -343,7 +343,7 @@ export default function LandingPage() {
               {
                 icon: Ban,
                 problem: "Generic meal plans",
-                desc: "Apps suggest quinoa bowls when you want tagine. No understanding of Moroccan or French cuisine whatsoever.",
+                desc: "Apps suggest quinoa bowls when you want tagine. No understanding of Moroccan or Mediterranean cuisine, no cultural context, no real recipes.",
                 color: "#FFF7F0",
                 border: "#E67E22",
                 iconColor: "#E67E22",
@@ -415,7 +415,7 @@ export default function LandingPage() {
               {
                 icon: Sparkles,
                 title: "AI Meal Planning",
-                desc: "Tell us your goals, allergies and cuisine preferences. Get 21 personalized recipes in under 30 seconds. Real Moroccan tagines, French classics, Mediterranean favorites.",
+                desc: "Tell us your goals, allergies and cuisine preferences. Get 21 personalized recipes in under 30 seconds. Authentic Moroccan tagines, Mediterranean favorites, and nourishing healthy essentials.",
                 highlight: "21 meals in 30 seconds",
                 color: "#E67E22",
               },
@@ -436,7 +436,7 @@ export default function LandingPage() {
               {
                 icon: UtensilsCrossed,
                 title: "Cultural Intelligence",
-                desc: "The only app that knows the difference between msemen and meloui, that plans around Ramadan, and that combines Moroccan warmth with French elegance.",
+                desc: "The only app that knows the difference between msemen and meloui, understands Mediterranean sharing culture, and brings the warmth of both traditions to your table.",
                 highlight: "100+ authentic recipes",
                 color: "#3498DB",
               },
@@ -577,7 +577,7 @@ export default function LandingPage() {
           </h2>
 
           <p className="text-xl mb-10" style={{ color: "rgba(255,255,255,0.7)" }}>
-            Join food lovers in Morocco and France who've discovered
+            Join food lovers across Morocco and the Mediterranean who've discovered
             the joy of culturally intelligent meal planning.
           </p>
 
@@ -617,7 +617,7 @@ export default function LandingPage() {
             </span>
           </div>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>
-            Made with ❤️ for Moroccan & French food lovers
+            Made with ❤️ for Moroccan & Mediterranean food lovers
           </p>
           <div className="flex items-center gap-4">
             <Link href="/login" className="text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>

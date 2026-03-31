@@ -32,11 +32,10 @@ const activityLevels = [
 
 const cuisineOptions = [
   { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
-  { value: "french", label: "French", emoji: "🇫🇷" },
   { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
-  { value: "italian", label: "Italian", emoji: "🇮🇹" },
+  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
+  { value: "french", label: "French", emoji: "🇫🇷" },
   { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
-  { value: "healthy", label: "Healthy/Clean", emoji: "🥗" },
 ]
 
 const allergyOptions = [

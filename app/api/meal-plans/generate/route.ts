@@ -96,7 +96,9 @@ ${patterns.dislikedNames.length > 0 ? `- Recipes user disliked: ${patterns.disli
 Apply these patterns to make this plan more personalized than the last one.`
   }
 
-  const prompt = `You are a professional nutritionist specializing in Moroccan, French and Mediterranean cuisines.
+  const prompt = `You are a professional nutritionist specializing in Moroccan and Mediterranean cuisines, with deep knowledge of healthy everyday cooking.
+
+Soufra's philosophy: Moroccan and Mediterranean cuisines share the same ingredients, the same warmth around food, and the same culture of eating together. "Healthy Essentials" means nourishing dishes built from common household ingredients (eggs, oats, chicken, rice, legumes, seasonal vegetables) — not exotic superfoods.
 
 Generate a 7-day meal plan for this user:
 - Cuisines: ${user.cuisines.join(", ")}
@@ -106,13 +108,21 @@ Generate a 7-day meal plan for this user:
 - Weekly budget: ${user.weeklyBudget} DH
 ${adaptiveSection}
 
+CUISINE GUIDANCE:
+- "moroccan": Authentic Moroccan dishes — tagines, couscous, harira, msemen, bastilla, zaalouk, briouats, rfissa
+- "mediterranean": Greek, Spanish, Lebanese, Turkish dishes — grilled fish, hummus, tabbouleh, shakshuka, stuffed vegetables, olive oil-based dishes
+- "healthy": Cuisine-agnostic clean eating — oatmeal, egg dishes, grilled chicken, lentil soups, rice bowls, veggie stir-fries, smoothies. Use simple everyday ingredients.
+- "french": Classic French — quiche, ratatouille, crêpes, soupe à l'oignon, salade niçoise
+- "middle_eastern": Falafel, shawarma, mujaddara, fattoush, lentil dishes
+
 RULES:
 1. Generate exactly 21 meals (7 days x 3 meals: breakfast, lunch, dinner)
 2. Respect allergies strictly - zero tolerance
-3. Match cuisine preferences
+3. Match cuisine preferences — if multiple cuisines selected, distribute proportionally
 4. Keep daily calories within 10% of target
-5. Use authentic Moroccan recipes when cuisine is moroccan
+5. Use authentic, culturally accurate recipes
 6. Never repeat the same recipe twice
+7. Prefer budget-friendly ingredients that are accessible in Morocco
 
 Respond ONLY with this exact JSON format, no other text:
 {

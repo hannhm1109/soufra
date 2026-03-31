@@ -5,11 +5,10 @@ import { Save, Check } from "lucide-react"
 
 const cuisineOptions = [
   { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
-  { value: "french", label: "French", emoji: "🇫🇷" },
   { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
-  { value: "italian", label: "Italian", emoji: "🇮🇹" },
+  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
+  { value: "french", label: "French", emoji: "🇫🇷" },
   { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
-  { value: "healthy", label: "Healthy/Clean", emoji: "🥗" },
 ]
 
 const allergyOptions = [
@@ -54,6 +53,7 @@ export default function SettingsForm({ user }: Props) {
   const [data, setData] = useState(user)
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
 
   const update = (field: string, value: any) => {
     setData(prev => ({ ...prev, [field]: value }))
@@ -69,16 +69,24 @@ export default function SettingsForm({ user }: Props) {
 
   const handleSave = async () => {
     setLoading(true)
-    const res = await fetch("/api/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
+    setError("")
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
 
-    if (res.ok) {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-      router.refresh()
+      if (res.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+        router.refresh()
+      } else {
+        const body = await res.json()
+        setError(body.error || "Failed to save. Please try again.")
+      }
+    } catch {
+      setError("Network error. Please try again.")
     }
     setLoading(false)
   }
@@ -244,6 +252,12 @@ export default function SettingsForm({ user }: Props) {
           ))}
         </div>
       </div>
+
+      {error && (
+        <div className="p-3 rounded-xl text-sm" style={{ backgroundColor: "#FEE2E2", color: "#DC2626" }}>
+          {error}
+        </div>
+      )}
 
       {/* Save Button */}
       <button

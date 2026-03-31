@@ -14,7 +14,7 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: "Soufra - Your Personal Nutrition Assistant",
-  description: "AI-powered meal planning for Moroccan & French cuisines",
+  description: "AI-powered meal planning for Moroccan & Mediterranean cuisines",
 }
 
 export default function RootLayout({
