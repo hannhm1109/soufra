@@ -1,4 +1,5 @@
 import Sidebar from "@/components/sidebar"
+import PageTransition from "@/components/page-transition"
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,7 @@ export default function DashboardLayout({
     <div className="flex min-h-screen" style={{ backgroundColor: "#FDFAF6" }}>
       <Sidebar />
       <main className="flex-1 lg:ml-64 p-4 lg:p-8 pb-24 lg:pb-8">
-        {children}
+        <PageTransition>{children}</PageTransition>
       </main>
     </div>
   )
