@@ -7,7 +7,7 @@ import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
   ShoppingCart, TrendingUp, ChevronRight,
-  Sunrise, Sun, Moon, Zap
+  Sunrise, Sun, Moon, Zap, BarChart2
 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -103,6 +103,13 @@ export default async function DashboardPage() {
   const R = 28
   const CIRC = 2 * Math.PI * R
   const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+
+  // Nutrition averages
+  const allSlots   = activePlan?.slots ?? []
+  const avgProtein = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.protein, 0) / 7)
+  const avgCarbs   = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.carbs,   0) / 7)
+  const avgFats    = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.fats,    0) / 7)
+  const macroTotal = avgProtein + avgCarbs + avgFats || 1
 
   const budgetPct = activeGrocery && user.weeklyBudget
     ? Math.min(((activeGrocery.totalCost ?? 0) / user.weeklyBudget) * 100, 100)
@@ -361,7 +368,7 @@ export default async function DashboardPage() {
                       return (
                         <td key={dayIndex} className="py-1.5 px-0.5">
                           {slot ? (
-                            <MealCard recipe={slot.recipe} />
+                            <MealCard recipe={slot.recipe} slotId={slot.id} />
                           ) : (
                             <div
                               className="rounded-xl border-2 border-dashed"
@@ -393,7 +400,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Bottom row ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
         {/* Grocery preview */}
         <div
@@ -462,6 +469,66 @@ export default async function DashboardPage() {
             <div className="text-center py-8">
               <ShoppingCart size={32} className="mx-auto mb-2" style={{ color: "#E5E7EB" }} />
               <p className="text-sm" style={{ color: "#9CA3AF" }}>Generate a meal plan first</p>
+            </div>
+          )}
+        </div>
+
+        {/* Nutrition Summary */}
+        <div
+          className="fade-in-up rounded-2xl p-6"
+          style={{
+            backgroundColor: "white",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            animationDelay: "330ms",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <BarChart2 size={18} style={{ color: "#2D5F5D" }} />
+            <h3 className="font-bold" style={{ color: "#2C3E50" }}>Nutrition / Day</h3>
+          </div>
+
+          {activePlan ? (
+            <>
+              {/* Macro stat boxes */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[
+                  { label: "Protein", value: avgProtein, unit: "g", color: "#E67E22", bg: "#FFF7F0" },
+                  { label: "Carbs",   value: avgCarbs,   unit: "g", color: "#2D5F5D", bg: "#F0F7F7" },
+                  { label: "Fat",     value: avgFats,    unit: "g", color: "#D4A574", bg: "#FFFBEB" },
+                ].map(({ label, value, unit, color, bg }) => (
+                  <div key={label} className="rounded-xl p-2.5 text-center" style={{ backgroundColor: bg }}>
+                    <p className="text-base font-bold leading-none" style={{ color }}>
+                      {value}<span className="text-xs font-normal">{unit}</span>
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>{label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stacked macro bar */}
+              <div className="h-3 rounded-full overflow-hidden flex" style={{ backgroundColor: "#F3F4F6" }}>
+                <div className="h-3 transition-all duration-700" style={{ width: `${(avgProtein / macroTotal) * 100}%`, backgroundColor: "#E67E22" }} />
+                <div className="h-3 transition-all duration-700" style={{ width: `${(avgCarbs   / macroTotal) * 100}%`, backgroundColor: "#2D5F5D" }} />
+                <div className="h-3 transition-all duration-700" style={{ width: `${(avgFats    / macroTotal) * 100}%`, backgroundColor: "#D4A574" }} />
+              </div>
+              <div className="flex justify-between text-xs mt-2">
+                <span style={{ color: "#E67E22" }}>P {Math.round((avgProtein / macroTotal) * 100)}%</span>
+                <span style={{ color: "#2D5F5D" }}>C {Math.round((avgCarbs   / macroTotal) * 100)}%</span>
+                <span style={{ color: "#D4A574" }}>F {Math.round((avgFats    / macroTotal) * 100)}%</span>
+              </div>
+
+              {/* Calorie avg */}
+              <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: "1px solid #F3F4F6" }}>
+                <span className="text-xs" style={{ color: "#9CA3AF" }}>Avg calories / day</span>
+                <span className="font-bold text-sm" style={{ color: "#2C3E50" }}>
+                  {Math.round(allSlots.reduce((s, sl) => s + sl.recipe.calories, 0) / 7)} kcal
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <BarChart2 size={32} className="mx-auto mb-2" style={{ color: "#E5E7EB" }} />
+              <p className="text-sm" style={{ color: "#9CA3AF" }}>No plan yet</p>
             </div>
           )}
         </div>
