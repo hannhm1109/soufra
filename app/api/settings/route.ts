@@ -53,8 +53,10 @@ export async function POST(req: Request) {
     })
 
     revalidatePath("/", "layout")
+    revalidatePath("/dashboard")
+    revalidatePath("/settings")
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, calorieTarget })
   } catch (error) {
     return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
   }

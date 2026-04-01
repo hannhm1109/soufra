@@ -98,13 +98,14 @@ function SectionHeader({
 }
 
 export default function SettingsForm({ user }: { user: UserData }) {
-  const router  = useRouter()
-  const [data, setData]       = useState<UserData>(user)
-  const [loading, setLoading] = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [error,   setError]   = useState("")
+  const router    = useRouter()
+  const [data,      setData]      = useState<UserData>(user)
+  const [baseline,  setBaseline]  = useState<UserData>(user)
+  const [loading,   setLoading]   = useState(false)
+  const [saved,     setSaved]     = useState(false)
+  const [error,     setError]     = useState("")
 
-  const hasChanges = JSON.stringify(data) !== JSON.stringify(user)
+  const hasChanges = JSON.stringify(data) !== JSON.stringify(baseline)
   const previewCal = useMemo(() => calcCalories(data), [data])
 
   const update = (field: string, value: unknown) =>
@@ -127,10 +128,11 @@ export default function SettingsForm({ user }: { user: UserData }) {
         body: JSON.stringify(data),
       })
       if (res.ok) {
+        setBaseline(data)   // reset hasChanges so sticky bar hides
         setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
         toast.success("Settings saved!")
         router.refresh()
+        setTimeout(() => setSaved(false), 2000)
       } else {
         const body = await res.json()
         const msg = body.error || "Failed to save. Please try again."
