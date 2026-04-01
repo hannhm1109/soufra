@@ -54,22 +54,25 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user?.email) redirect("/login")
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      mealPlans: {
-        where: { isActive: true },
-        include: { slots: { include: { recipe: true } } },
-        orderBy: { createdAt: "desc" },
-        take: 1,
+  const [user, ratingCount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        mealPlans: {
+          where: { isActive: true },
+          include: { slots: { include: { recipe: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        groceryLists: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: { items: { take: 5, orderBy: { createdAt: "asc" } } },
+        },
       },
-      groceryLists: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        include: { items: { take: 5, orderBy: { createdAt: "asc" } } },
-      },
-    },
-  })
+    }),
+    prisma.recipeFeedback.count({ where: { user: { email: session.user.email } } }),
+  ])
 
   if (!user) redirect("/login")
   if (!user.fitnessGoal) redirect("/onboarding")
@@ -128,7 +131,7 @@ export default async function DashboardPage() {
             Week of {weekRange}
           </p>
         </div>
-        <GenerateButton />
+        <GenerateButton ratingCount={ratingCount} />
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────── */}

@@ -5,66 +5,78 @@ import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+// Strip markdown code fences GPT sometimes wraps JSON in
+function extractJSON(raw: string): string {
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+  return fenced ? fenced[1].trim() : raw.trim()
+}
+
 async function analyzeUserFeedback(userId: string) {
   const feedback = await prisma.recipeFeedback.findMany({
     where: { userId },
     include: { recipe: true },
     orderBy: { createdAt: "desc" },
-    take: 50,
+    take: 100,
   })
 
   if (feedback.length < 3) return null
 
-  const liked = feedback.filter(f => f.liked)
+  const liked    = feedback.filter(f => f.liked)
   const disliked = feedback.filter(f => !f.liked)
 
-  // Cuisine preferences
+  // ── Cuisine preferences ──────────────────────────────────
   const cuisineLikes: Record<string, number> = {}
-  liked.forEach(f => {
-    cuisineLikes[f.recipe.cuisine] = (cuisineLikes[f.recipe.cuisine] || 0) + 1
-  })
+  liked.forEach(f => { cuisineLikes[f.recipe.cuisine] = (cuisineLikes[f.recipe.cuisine] || 0) + 1 })
   const favoriteCuisines = Object.entries(cuisineLikes)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([cuisine]) => cuisine)
+    .sort((a, b) => b[1] - a[1]).slice(0, 3).map(([c]) => c)
 
-  // Disliked cuisines
   const cuisineDislikes: Record<string, number> = {}
-  disliked.forEach(f => {
-    cuisineDislikes[f.recipe.cuisine] = (cuisineDislikes[f.recipe.cuisine] || 0) + 1
-  })
+  disliked.forEach(f => { cuisineDislikes[f.recipe.cuisine] = (cuisineDislikes[f.recipe.cuisine] || 0) + 1 })
   const avoidCuisines = Object.entries(cuisineDislikes)
-    .filter(([, count]) => count >= 2)
-    .map(([cuisine]) => cuisine)
+    .filter(([, n]) => n >= 2).map(([c]) => c)
 
-  // Prep time preference
-  const avgLikedTime = liked.length > 0
-    ? liked.reduce((sum, f) => sum + f.recipe.prepTime + f.recipe.cookTime, 0) / liked.length
-    : null
+  // ── Prep time preference ─────────────────────────────────
+  const avgLikedTime    = liked.length    > 0 ? liked.reduce((s, f)    => s + f.recipe.prepTime + f.recipe.cookTime, 0) / liked.length    : null
+  const avgDislikedTime = disliked.length > 0 ? disliked.reduce((s, f) => s + f.recipe.prepTime + f.recipe.cookTime, 0) / disliked.length : null
+  const prefersQuick    = avgLikedTime && avgDislikedTime ? avgLikedTime < avgDislikedTime - 15 : false
 
-  const avgDislikedTime = disliked.length > 0
-    ? disliked.reduce((sum, f) => sum + f.recipe.prepTime + f.recipe.cookTime, 0) / disliked.length
-    : null
+  // ── Difficulty preference ────────────────────────────────
+  const diffLikes: Record<string, number> = {}
+  liked.forEach(f => { diffLikes[f.recipe.difficulty] = (diffLikes[f.recipe.difficulty] || 0) + 1 })
+  const preferredDifficulty = Object.entries(diffLikes).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 
-  const prefersQuick = avgLikedTime && avgDislikedTime
-    ? avgLikedTime < avgDislikedTime - 15
-    : false
+  // ── Tag preferences ──────────────────────────────────────
+  const tagLikes: Record<string, number> = {}
+  liked.forEach(f => f.recipe.tags.forEach((t: string) => { tagLikes[t] = (tagLikes[t] || 0) + 1 }))
+  const preferredTags = Object.entries(tagLikes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([t]) => t)
 
-  // Disliked recipe names to avoid
-  const dislikedNames = disliked.slice(0, 10).map(f => f.recipe.name)
-
-  // Liked recipe names to inspire
-  const likedNames = liked.slice(0, 10).map(f => f.recipe.name)
+  // ── Recipe name lists ────────────────────────────────────
+  const likedNames    = liked.slice(0, 15).map(f => f.recipe.name)
+  const dislikedNames = disliked.slice(0, 15).map(f => f.recipe.name)
 
   return {
     favoriteCuisines,
     avoidCuisines,
     prefersQuick,
     avgLikedTime,
-    dislikedNames,
+    preferredDifficulty,
+    preferredTags,
     likedNames,
-    totalRatings: feedback.length,
+    dislikedNames,
+    totalLiked:    liked.length,
+    totalDisliked: disliked.length,
+    totalRatings:  feedback.length,
   }
+}
+
+async function getPreviousRecipeNames(userId: string): Promise<string[]> {
+  const plans = await prisma.mealPlan.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+    include: { slots: { include: { recipe: { select: { name: true } } } } },
+  })
+  return [...new Set(plans.flatMap(p => p.slots.map(s => s.recipe.name)))]
 }
 
 export async function POST() {
@@ -73,57 +85,83 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email }
-  })
-
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-  // Analyze feedback patterns
-  const patterns = await analyzeUserFeedback(user.id)
+  const [patterns, previousNames] = await Promise.all([
+    analyzeUserFeedback(user.id),
+    getPreviousRecipeNames(user.id),
+  ])
 
-  // Build adaptive prompt section
+  // ── Calorie split per meal ───────────────────────────────
+  const target    = user.calorieTarget ?? 2000
+  const breakfast = Math.round(target * 0.25)
+  const lunch     = Math.round(target * 0.40)
+  const dinner    = Math.round(target * 0.35)
+
+  // ── Adaptive learning block ──────────────────────────────
   let adaptiveSection = ""
-  if (patterns && patterns.totalRatings >= 3) {
-    adaptiveSection = `
-LEARNING FROM USER FEEDBACK (${patterns.totalRatings} ratings analyzed):
-${patterns.favoriteCuisines.length > 0 ? `- User LOVES: ${patterns.favoriteCuisines.join(", ")} cuisine → prioritize these` : ""}
-${patterns.avoidCuisines.length > 0 ? `- User DISLIKES: ${patterns.avoidCuisines.join(", ")} cuisine → minimize or avoid` : ""}
-${patterns.prefersQuick ? `- User prefers quick recipes (avg liked: ${Math.round(patterns.avgLikedTime!)}min) → keep meals under 40min` : ""}
-${patterns.likedNames.length > 0 ? `- Recipes user loved: ${patterns.likedNames.join(", ")} → generate similar style` : ""}
-${patterns.dislikedNames.length > 0 ? `- Recipes user disliked: ${patterns.dislikedNames.join(", ")} → avoid these exact recipes` : ""}
-Apply these patterns to make this plan more personalized than the last one.`
+  if (patterns) {
+    const lines: string[] = [
+      `\nLEARNING FROM USER TASTE PROFILE (${patterns.totalRatings} ratings — ${patterns.totalLiked} liked, ${patterns.totalDisliked} disliked):`,
+    ]
+    if (patterns.favoriteCuisines.length)
+      lines.push(`• Loved cuisines: ${patterns.favoriteCuisines.join(", ")} → prioritize these heavily`)
+    if (patterns.avoidCuisines.length)
+      lines.push(`• Disliked cuisines: ${patterns.avoidCuisines.join(", ")} → avoid entirely`)
+    if (patterns.preferredDifficulty)
+      lines.push(`• Preferred difficulty: ${patterns.preferredDifficulty} → match this level`)
+    if (patterns.preferredTags.length)
+      lines.push(`• Loved recipe styles: ${patterns.preferredTags.join(", ")} → lean into these`)
+    if (patterns.prefersQuick)
+      lines.push(`• Prefers quick meals (avg liked: ${Math.round(patterns.avgLikedTime!)}min) → keep total time under 40min`)
+    if (patterns.likedNames.length)
+      lines.push(`• Recipes user loved — use as style inspiration: ${patterns.likedNames.join(", ")}`)
+    if (patterns.dislikedNames.length)
+      lines.push(`• Recipes user disliked — DO NOT regenerate these: ${patterns.dislikedNames.join(", ")}`)
+    lines.push(`This plan must feel noticeably more personalized than generic suggestions.`)
+    adaptiveSection = lines.join("\n")
   }
 
-  const prompt = `You are a professional nutritionist specializing in Moroccan and Mediterranean cuisines, with deep knowledge of healthy everyday cooking.
+  // ── Cross-plan variety ───────────────────────────────────
+  const varietySection = previousNames.length > 0
+    ? `\nCROSS-PLAN VARIETY — avoid repeating recipes from previous plans:\n${previousNames.map(n => `• ${n}`).join("\n")}\nGenerate fresh recipes the user hasn't seen before.`
+    : ""
 
-Soufra's philosophy: Moroccan and Mediterranean cuisines share the same ingredients, the same warmth around food, and the same culture of eating together. "Healthy Essentials" means nourishing dishes built from common household ingredients (eggs, oats, chicken, rice, legumes, seasonal vegetables) — not exotic superfoods.
+  const prompt = `You are a professional nutritionist and chef specializing in Moroccan and Mediterranean cuisines, with deep knowledge of healthy, budget-friendly everyday cooking.
 
-Generate a 7-day meal plan for this user:
+SOUFRA PHILOSOPHY: Moroccan and Mediterranean cuisines share the same warmth, the same ingredients, the same culture of eating together. "Healthy Essentials" means nourishing dishes from common household staples (eggs, oats, chicken, rice, legumes, seasonal vegetables) — not exotic superfoods.
+
+USER PROFILE:
 - Cuisines: ${user.cuisines.join(", ")}
-- Daily calorie target: ${user.calorieTarget} kcal
+- Daily calorie target: ${target} kcal
+- Calorie split: breakfast ~${breakfast} kcal | lunch ~${lunch} kcal | dinner ~${dinner} kcal
 - Fitness goal: ${user.fitnessGoal}
 - Allergies: ${user.allergies.length > 0 ? user.allergies.join(", ") : "none"}
-- Weekly budget: ${user.weeklyBudget} DH
+- Weekly budget: ${user.weeklyBudget} DH (Morocco — use ingredients priced in MAD)
 ${adaptiveSection}
+${varietySection}
 
 CUISINE GUIDANCE:
-- "moroccan": Authentic Moroccan dishes — tagines, couscous, harira, msemen, bastilla, zaalouk, briouats, rfissa
-- "mediterranean": Greek, Spanish, Lebanese, Turkish dishes — grilled fish, hummus, tabbouleh, shakshuka, stuffed vegetables, olive oil-based dishes
-- "healthy": Cuisine-agnostic clean eating — oatmeal, egg dishes, grilled chicken, lentil soups, rice bowls, veggie stir-fries, smoothies. Use simple everyday ingredients.
-- "french": Classic French — quiche, ratatouille, crêpes, soupe à l'oignon, salade niçoise
-- "middle_eastern": Falafel, shawarma, mujaddara, fattoush, lentil dishes
+- "moroccan": Authentic dishes — tagines, couscous, harira, msemen, bastilla, zaalouk, briouats, rfissa, batbout, sellou, chebakia
+- "mediterranean": Greek, Spanish, Lebanese, Turkish — grilled fish, hummus, tabbouleh, shakshuka, stuffed vegetables, labneh, pita dishes, olive oil-based
+- "healthy": Clean everyday eating — oatmeal bowls, egg dishes, grilled chicken, lentil soups, grain bowls, veggie stir-fries. Simple, accessible ingredients.
+- "french": Quiche, ratatouille, crêpes, soupe à l'oignon, salade niçoise, omelettes
+- "middle_eastern": Falafel, shawarma, mujaddara, fattoush, mansaf, kibbeh
 
-RULES:
-1. Generate exactly 21 meals (7 days x 3 meals: breakfast, lunch, dinner)
-2. Respect allergies strictly - zero tolerance
-3. Match cuisine preferences — if multiple cuisines selected, distribute proportionally
-4. Keep daily calories within 10% of target
-5. Use authentic, culturally accurate recipes
-6. Never repeat the same recipe twice
-7. Prefer budget-friendly ingredients that are accessible in Morocco
+STRICT RULES:
+1. Generate exactly 21 meals — 7 days (dayOfWeek 0=Monday to 6=Sunday) × 3 meal types: breakfast, lunch, dinner
+2. ALLERGIES: zero tolerance — check every ingredient
+3. Distribute cuisines proportionally across the week based on user preferences
+4. Each meal's calories must be close to its target: breakfast ~${breakfast}, lunch ~${lunch}, dinner ~${dinner}
+5. Macros must be realistic and add up: protein + carbs + fats should roughly equal calories ÷ 4
+6. Never repeat the same recipe name in this plan
+7. Use ingredients available in Moroccan markets (souks), priced in DH
+8. Instructions must be real, actionable cooking steps (minimum 4 steps)
+9. Ingredients must include quantities (e.g. "200g chicken breast", "2 tbsp olive oil")
+10. difficulty must be one of: "easy", "medium", "hard"
 
-Respond ONLY with this exact JSON format, no other text:
+Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Exactly this structure:
 {
   "meals": [
     {
@@ -131,17 +169,17 @@ Respond ONLY with this exact JSON format, no other text:
       "mealType": "breakfast",
       "name": "Recipe name",
       "cuisine": "moroccan",
-      "prepTime": 15,
-      "cookTime": 10,
-      "servings": 1,
+      "prepTime": 10,
+      "cookTime": 15,
+      "servings": 2,
       "difficulty": "easy",
-      "calories": 400,
-      "protein": 20,
-      "carbs": 45,
-      "fats": 12,
-      "ingredients": ["200g oats", "1 banana", "250ml milk"],
-      "instructions": ["Step 1", "Step 2", "Step 3"],
-      "tags": ["quick", "healthy"]
+      "calories": ${breakfast},
+      "protein": 18,
+      "carbs": 42,
+      "fats": 8,
+      "ingredients": ["200g oats", "1 banana", "250ml milk", "1 tbsp honey"],
+      "instructions": ["Step 1...", "Step 2...", "Step 3...", "Step 4..."],
+      "tags": ["quick", "high-protein"]
     }
   ]
 }`
@@ -149,98 +187,114 @@ Respond ONLY with this exact JSON format, no other text:
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 6000,
+      messages: [
+        {
+          role: "system",
+          content: "You are a nutrition expert. You ALWAYS respond with valid JSON only — no markdown, no code blocks, no extra text. Your JSON must be complete and parseable.",
+        },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.75,
+      max_tokens: 12000,
+      response_format: { type: "json_object" },
     })
 
-    const content = completion.choices[0].message.content
-    if (!content) throw new Error("No response from OpenAI")
+    const raw = completion.choices[0].message.content
+    if (!raw) throw new Error("No response from OpenAI")
 
-    const parsed = JSON.parse(content)
-    const meals = parsed.meals
+    const parsed = JSON.parse(extractJSON(raw))
+    const meals: any[] = parsed.meals
 
-    if (!meals || meals.length !== 21) {
+    if (!Array.isArray(meals) || meals.length === 0) {
       throw new Error("Invalid meal plan structure")
     }
 
     // Deactivate old plans
     await prisma.mealPlan.updateMany({
       where: { userId: user.id, isActive: true },
-      data: { isActive: false }
+      data: { isActive: false },
     })
 
     // Create new plan
     const mealPlan = await prisma.mealPlan.create({
-      data: {
-        userId: user.id,
-        weekStart: new Date(),
-        isActive: true,
-      }
+      data: { userId: user.id, weekStart: new Date(), isActive: true },
     })
 
-    // Create recipes and slots
+    // Create recipes and slots — skip any malformed entries
+    let created = 0
     for (const meal of meals) {
-      const recipe = await prisma.recipe.create({
-        data: {
-          name: meal.name,
-          cuisine: meal.cuisine,
-          prepTime: meal.prepTime,
-          cookTime: meal.cookTime,
-          servings: meal.servings,
-          difficulty: meal.difficulty,
-          calories: meal.calories,
-          protein: meal.protein,
-          carbs: meal.carbs,
-          fats: meal.fats,
-          ingredients: meal.ingredients,
-          instructions: meal.instructions,
-          tags: meal.tags || [],
-          imageUrl: null,
-        }
-      })
+      if (!meal.name || meal.dayOfWeek == null || !meal.mealType) continue
+      try {
+        const recipe = await prisma.recipe.create({
+          data: {
+            name:         meal.name,
+            cuisine:      meal.cuisine      ?? "healthy",
+            prepTime:     meal.prepTime     ?? 10,
+            cookTime:     meal.cookTime     ?? 15,
+            servings:     meal.servings     ?? 2,
+            difficulty:   ["easy","medium","hard"].includes(meal.difficulty) ? meal.difficulty : "easy",
+            calories:     meal.calories     ?? 400,
+            protein:      meal.protein      ?? 20,
+            carbs:        meal.carbs        ?? 40,
+            fats:         meal.fats         ?? 10,
+            ingredients:  Array.isArray(meal.ingredients)  ? meal.ingredients  : [],
+            instructions: Array.isArray(meal.instructions) ? meal.instructions : [],
+            tags:         Array.isArray(meal.tags)         ? meal.tags         : [],
+            imageUrl:     null,
+          },
+        })
 
-      await prisma.mealPlanSlot.create({
-        data: {
-          mealPlanId: mealPlan.id,
-          recipeId: recipe.id,
-          dayOfWeek: meal.dayOfWeek,
-          mealType: meal.mealType,
-        }
-      })
+        await prisma.mealPlanSlot.create({
+          data: {
+            mealPlanId: mealPlan.id,
+            recipeId:   recipe.id,
+            dayOfWeek:  meal.dayOfWeek,
+            mealType:   meal.mealType,
+          },
+        })
+        created++
+      } catch {
+        // skip duplicate slots (same day+mealType) silently
+      }
     }
 
-    // Save learned preferences back to user
+    if (created === 0) throw new Error("No valid meals could be saved")
+
+    // Persist learned preferences
     if (patterns) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
           learnedPrefs: {
-            favoriteCuisines: patterns.favoriteCuisines,
-            avoidCuisines: patterns.avoidCuisines,
-            prefersQuick: patterns.prefersQuick,
-            totalRatings: patterns.totalRatings,
-            lastAnalyzed: new Date().toISOString(),
-          }
-        }
+            favoriteCuisines:    patterns.favoriteCuisines,
+            avoidCuisines:       patterns.avoidCuisines,
+            preferredDifficulty: patterns.preferredDifficulty,
+            preferredTags:       patterns.preferredTags,
+            prefersQuick:        patterns.prefersQuick,
+            totalRatings:        patterns.totalRatings,
+            lastAnalyzed:        new Date().toISOString(),
+          },
+        },
       })
     }
 
     return NextResponse.json({
-      success: true,
-      planId: mealPlan.id,
-      adapted: patterns !== null,
-      patterns: patterns ? {
-        totalRatings: patterns.totalRatings,
-        favoriteCuisines: patterns.favoriteCuisines,
-      } : null
+      success:  true,
+      planId:   mealPlan.id,
+      created,
+      adapted:  patterns !== null,
+      insights: patterns ? {
+        totalRatings:        patterns.totalRatings,
+        totalLiked:          patterns.totalLiked,
+        totalDisliked:       patterns.totalDisliked,
+        favoriteCuisines:    patterns.favoriteCuisines,
+        preferredDifficulty: patterns.preferredDifficulty,
+        preferredTags:       patterns.preferredTags,
+      } : null,
     })
 
   } catch (error) {
     console.error("Generation error:", error)
-    return NextResponse.json(
-      { error: "Failed to generate meal plan" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Failed to generate meal plan" }, { status: 500 })
   }
 }
