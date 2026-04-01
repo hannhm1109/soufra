@@ -6,7 +6,8 @@ import MealCard from "@/components/meal-card"
 import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
-  ShoppingCart, TrendingUp, ChevronRight
+  ShoppingCart, TrendingUp, ChevronRight,
+  Sunrise, Sun, Moon, Zap
 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -87,6 +88,22 @@ export default async function DashboardPage() {
   const getMeal = (dayIndex: number, mealType: string) =>
     activePlan?.slots.find(s => s.dayOfWeek === dayIndex && s.mealType === mealType) ?? null
 
+  const todayMeals = {
+    breakfast: getMeal(todayIndex, "breakfast"),
+    lunch:     getMeal(todayIndex, "lunch"),
+    dinner:    getMeal(todayIndex, "dinner"),
+  }
+  const todayCalories = Object.values(todayMeals).reduce(
+    (sum, slot) => sum + (slot?.recipe.calories ?? 0), 0
+  )
+  const caloriePct = user.calorieTarget
+    ? Math.min((todayCalories / user.calorieTarget) * 100, 100)
+    : 0
+  // SVG ring math
+  const R = 28
+  const CIRC = 2 * Math.PI * R
+  const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+
   const budgetPct = activeGrocery && user.weeklyBudget
     ? Math.min(((activeGrocery.totalCost ?? 0) / user.weeklyBudget) * 100, 100)
     : 0
@@ -158,6 +175,117 @@ export default async function DashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Today's Focus ──────────────────────────────────────── */}
+      <div
+        className="fade-in-up rounded-2xl p-6 mb-6"
+        style={{
+          backgroundColor: "white",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+          animationDelay: "200ms",
+        }}
+      >
+        {/* Row: title + date on left, calorie ring on right */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Zap size={16} style={{ color: "#D4A574" }} />
+              <h2 className="text-xl font-bold" style={{ color: "#2C3E50" }}>Today&apos;s Focus</h2>
+            </div>
+            <p className="text-sm" style={{ color: "#9CA3AF" }}>{todayLabel}</p>
+          </div>
+
+          {/* Calorie ring */}
+          {user.calorieTarget && activePlan && (
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-xs" style={{ color: "#9CA3AF" }}>Today&apos;s calories</p>
+                <p className="font-bold text-lg leading-tight" style={{ color: "#2C3E50" }}>
+                  {todayCalories}
+                  <span className="text-xs font-normal ml-1" style={{ color: "#9CA3AF" }}>
+                    / {user.calorieTarget} kcal
+                  </span>
+                </p>
+              </div>
+              <svg width="68" height="68" viewBox="0 0 68 68" style={{ transform: "rotate(-90deg)" }}>
+                <circle cx="34" cy="34" r={R} fill="none" stroke="#F3F4F6" strokeWidth="6" />
+                <circle
+                  cx="34" cy="34" r={R} fill="none"
+                  stroke={caloriePct >= 100 ? "#E74C3C" : caloriePct >= 80 ? "#E67E22" : "#2D5F5D"}
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={CIRC}
+                  strokeDashoffset={CIRC - (CIRC * caloriePct) / 100}
+                  style={{ transition: "stroke-dashoffset 0.6s ease" }}
+                />
+              </svg>
+            </div>
+          )}
+        </div>
+
+        {/* 3 meal columns */}
+        {activePlan ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {(
+              [
+                { key: "breakfast", label: "Breakfast", Icon: Sunrise, color: "#F59E0B", bg: "#FFFBEB" },
+                { key: "lunch",     label: "Lunch",     Icon: Sun,     color: "#E67E22", bg: "#FFF7F0" },
+                { key: "dinner",    label: "Dinner",    Icon: Moon,    color: "#6366F1", bg: "#F5F3FF" },
+              ] as const
+            ).map(({ key, label, Icon, color, bg }) => {
+              const slot = todayMeals[key]
+              return slot ? (
+                <Link key={key} href={`/dashboard/recipe/${slot.recipe.id}`}>
+                  <div
+                    className="rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                    style={{ backgroundColor: bg }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon size={14} style={{ color }} />
+                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
+                        {label}
+                      </span>
+                    </div>
+                    <p className="font-bold text-sm leading-snug mb-2" style={{ color: "#2C3E50" }}>
+                      {slot.recipe.name}
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: "rgba(0,0,0,0.06)", color: "#6B7280" }}
+                      >
+                        <Flame size={10} style={{ color: "#E67E22" }} />
+                        {slot.recipe.calories} kcal
+                      </span>
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: "rgba(0,0,0,0.06)", color: "#6B7280" }}
+                      >
+                        P {slot.recipe.protein}g
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div
+                  key={key}
+                  className="rounded-xl p-4 border-2 border-dashed flex flex-col items-center justify-center gap-1"
+                  style={{ borderColor: "#E5E7EB", minHeight: "100px" }}
+                >
+                  <Icon size={18} style={{ color: "#D1D5DB" }} />
+                  <span className="text-xs" style={{ color: "#9CA3AF" }}>No {label.toLowerCase()}</span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border-2 border-dashed flex items-center justify-center gap-2 py-8"
+            style={{ borderColor: "#E5E7EB" }}>
+            <UtensilsCrossed size={18} style={{ color: "#D1D5DB" }} />
+            <span className="text-sm" style={{ color: "#9CA3AF" }}>Generate a plan to see today&apos;s meals</span>
+          </div>
+        )}
       </div>
 
       {/* ── Meal plan grid ─────────────────────────────────────── */}
