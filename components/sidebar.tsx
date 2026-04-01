@@ -97,40 +97,40 @@ export default function Sidebar() {
 
       {/* MOBILE BOTTOM NAV */}
       <div
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-4 py-3"
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50"
         style={{
           backgroundColor: "#2D5F5D",
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.15)"
+          boxShadow: "0 -2px 20px rgba(0,0,0,0.18)",
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}>
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all">
-              <Icon
-                size={22}
-                style={{ color: active ? "#D4A574" : "rgba(255,255,255,0.6)" }}
-              />
-              <span
-                className="text-xs font-medium"
-                style={{ color: active ? "#D4A574" : "rgba(255,255,255,0.6)" }}>
-                {label.split(" ")[0]}
-              </span>
-            </Link>
-          )
-        })}
-
-        {/* Logout on mobile */}
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all">
-          <LogOut size={22} style={{ color: "rgba(255,255,255,0.6)" }} />
-          <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>
-            Logout
-          </span>
-        </button>
+        <div className="flex items-center justify-around px-2 pt-2 pb-2">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href))
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-2xl transition-all duration-200"
+                style={{
+                  backgroundColor: active ? "rgba(212,165,116,0.22)" : "transparent",
+                  minWidth: "52px",
+                }}>
+                <Icon
+                  size={21}
+                  style={{ color: active ? "#D4A574" : "rgba(255,255,255,0.55)" }}
+                />
+                <span
+                  className="text-[10px] font-semibold"
+                  style={{ color: active ? "#D4A574" : "rgba(255,255,255,0.55)" }}>
+                  {label.split(" ")[0]}
+                </span>
+                {active && (
+                  <div className="w-1 h-1 rounded-full" style={{ backgroundColor: "#D4A574" }} />
+                )}
+              </Link>
+            )
+          })}
+        </div>
       </div>
     </>
   )

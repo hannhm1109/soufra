@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Sparkles, Loader2, Brain, AlertCircle } from "lucide-react"
+import { toast } from "sonner"
 
 export default function GenerateButton() {
   const router = useRouter()
@@ -18,13 +19,20 @@ export default function GenerateButton() {
       const data = await res.json()
 
       if (res.ok) {
-        if (data.adapted) setAdapted(true)
+        if (data.adapted) {
+          setAdapted(true)
+          toast.success("Plan adapted from your feedback!")
+        } else {
+          toast.success("Your meal plan is ready!")
+        }
         router.refresh()
       } else {
         setError("Generation failed. Please try again.")
+        toast.error("Generation failed. Please try again.")
       }
     } catch {
       setError("Network error. Please try again.")
+      toast.error("Network error. Please try again.")
     } finally {
       setLoading(false)
     }

@@ -3,6 +3,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { RefreshCw, X, Flame, Loader2, Check } from "lucide-react"
+import { toast } from "sonner"
 
 type Recipe = {
   id: string
@@ -62,6 +63,7 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
     })
     setOpen(false)
     setSwapping(null)
+    toast.success("Recipe swapped!")
     router.refresh()
   }
 

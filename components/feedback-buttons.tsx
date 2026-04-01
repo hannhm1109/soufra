@@ -1,6 +1,7 @@
 "use client"
 import { useState, useEffect } from "react"
 import { ThumbsUp, ThumbsDown } from "lucide-react"
+import { toast } from "sonner"
 
 export default function FeedbackButtons({ recipeId }: { recipeId: string }) {
   const [liked, setLiked] = useState<boolean | null>(null)
@@ -23,7 +24,11 @@ export default function FeedbackButtons({ recipeId }: { recipeId: string }) {
       body: JSON.stringify({ recipeId, liked: value }),
     })
 
-    if (res.ok) setLiked(value)
+    if (res.ok) {
+      setLiked(value)
+      if (value) toast.success("Added to your favorites!")
+      else toast("Got it — we'll adjust your future plans")
+    }
     setLoading(false)
   }
 

@@ -6,6 +6,7 @@ import {
   AlertCircle, Flame, Dumbbell, TrendingUp, Leaf,
   Activity, AlertTriangle,
 } from "lucide-react"
+import { toast } from "sonner"
 
 const cuisineOptions = [
   { value: "moroccan",       label: "Moroccan",          emoji: "🇲🇦" },
@@ -128,13 +129,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
       if (res.ok) {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
+        toast.success("Settings saved!")
         router.refresh()
       } else {
         const body = await res.json()
-        setError(body.error || "Failed to save. Please try again.")
+        const msg = body.error || "Failed to save. Please try again."
+        setError(msg)
+        toast.error(msg)
       }
     } catch {
       setError("Network error. Please try again.")
+      toast.error("Network error. Please try again.")
     }
     setLoading(false)
   }

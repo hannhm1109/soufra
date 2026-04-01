@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ShoppingCart, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 
 export default function GenerateGroceryButton() {
   const router = useRouter()
@@ -12,12 +13,13 @@ export default function GenerateGroceryButton() {
     try {
       const res = await fetch("/api/grocery/generate", { method: "POST" })
       if (res.ok) {
+        toast.success("Grocery list ready!")
         router.refresh()
       } else {
-        alert("Generate a meal plan first!")
+        toast.error("Generate a meal plan first!")
       }
     } catch {
-      alert("Something went wrong!")
+      toast.error("Something went wrong. Please try again.")
     } finally {
       setLoading(false)
     }

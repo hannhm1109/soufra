@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Clock, Flame, ChefHat, ArrowLeft, ShoppingBasket } from "lucide-react"
+import { Clock, Flame, ChefHat, ArrowLeft, Users } from "lucide-react"
 import Link from "next/link"
 import FeedbackButtons from "@/components/feedback-buttons"
+import IngredientsChecklist from "@/components/ingredients-checklist"
 
 const cuisineLabel: Record<string, string> = {
   moroccan:       "Moroccan",
@@ -12,6 +13,12 @@ const cuisineLabel: Record<string, string> = {
   french:         "French",
   middle_eastern: "Middle Eastern",
   italian:        "Italian",
+}
+
+const difficultyColor: Record<string, { bg: string; text: string }> = {
+  easy:   { bg: "rgba(39,174,96,0.2)",  text: "#27AE60" },
+  medium: { bg: "rgba(230,126,34,0.2)", text: "#E67E22" },
+  hard:   { bg: "rgba(231,76,60,0.2)",  text: "#E74C3C" },
 }
 
 export default async function RecipePage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,54 +31,64 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
 
   const ingredients  = recipe.ingredients  as string[]
   const instructions = recipe.instructions as string[]
+  const diff         = difficultyColor[recipe.difficulty] ?? difficultyColor.medium
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
 
       {/* Back */}
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 mb-6 text-sm font-medium transition-opacity hover:opacity-70"
-        style={{ color: "#2D5F5D" }}
-      >
+        style={{ color: "#2D5F5D" }}>
         <ArrowLeft size={16} />
         Back to dashboard
       </Link>
 
-      {/* Hero header — always teal, no Unsplash */}
-      <div className="rounded-2xl p-8 mb-6" style={{ backgroundColor: "#2D5F5D" }}>
-        <span
-          className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full mb-4 inline-block"
-          style={{ backgroundColor: "rgba(212,165,116,0.25)", color: "#D4A574" }}
-        >
-          {cuisineLabel[recipe.cuisine] ?? recipe.cuisine}
-        </span>
+      {/* Hero */}
+      <div className="rounded-2xl p-8 mb-5" style={{ backgroundColor: "#2D5F5D" }}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <span
+            className="text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full"
+            style={{ backgroundColor: "rgba(212,165,116,0.25)", color: "#D4A574" }}>
+            {cuisineLabel[recipe.cuisine] ?? recipe.cuisine}
+          </span>
+          <span
+            className="text-xs font-semibold px-3 py-1 rounded-full capitalize"
+            style={{ backgroundColor: diff.bg, color: diff.text }}>
+            {recipe.difficulty}
+          </span>
+        </div>
+
         <h1
           className="text-3xl font-bold text-white mb-5 leading-tight"
-          style={{ fontFamily: "var(--font-playfair)" }}
-        >
+          style={{ fontFamily: "var(--font-playfair)" }}>
           {recipe.name}
         </h1>
-        <div className="flex items-center gap-5">
+
+        <div className="flex items-center gap-6 flex-wrap">
           {[
-            { icon: Clock,   label: `${recipe.prepTime + recipe.cookTime} min` },
-            { icon: Flame,   label: `${recipe.calories} kcal`                 },
-            { icon: ChefHat, label: recipe.difficulty                          },
+            { icon: Clock,  label: `${recipe.prepTime} min prep`           },
+            { icon: Flame,  label: `${recipe.calories} kcal`               },
+            { icon: ChefHat,label: `${recipe.cookTime} min cook`           },
+            { icon: Users,  label: "2 servings"                            },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-1.5">
-              <Icon size={15} style={{ color: "#D4A574" }} />
-              <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>{label}</span>
+              <Icon size={14} style={{ color: "#D4A574" }} />
+              <span className="text-sm font-medium" style={{ color: "rgba(255,255,255,0.8)" }}>
+                {label}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Macros */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-4 mb-5">
         {[
           { label: "Protein", value: `${recipe.protein}g`, color: "#E67E22", bg: "#FFF7F0" },
           { label: "Carbs",   value: `${recipe.carbs}g`,   color: "#2D5F5D", bg: "#F0F7F7" },
-          { label: "Fats",    value: `${recipe.fats}g`,    color: "#27AE60", bg: "#F0FFF4" },
+          { label: "Fats",    value: `${recipe.fats}g`,    color: "#D4A574", bg: "#FFFBEB" },
         ].map(({ label, value, color, bg }) => (
           <div key={label} className="rounded-2xl p-4 text-center" style={{ backgroundColor: bg }}>
             <p className="text-2xl font-bold" style={{ color }}>{value}</p>
@@ -82,11 +99,10 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
 
       {/* Feedback + tags */}
       <div
-        className="rounded-2xl p-5 mb-6 flex items-center justify-between gap-4"
-        style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
-      >
+        className="rounded-2xl p-5 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+        style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <FeedbackButtons recipeId={recipe.id} />
-        <div className="flex gap-2 flex-wrap justify-end">
+        <div className="flex gap-2 flex-wrap">
           {recipe.tags.map((tag) => (
             <span key={tag} className="text-xs px-3 py-1 rounded-full capitalize"
               style={{ backgroundColor: "#F0F7F7", color: "#2D5F5D" }}>
@@ -96,42 +112,29 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* Ingredients + Instructions */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <h2 className="text-base font-bold mb-4 flex items-center gap-2" style={{ color: "#2C3E50" }}>
-            <ShoppingBasket size={16} style={{ color: "#2D5F5D" }} />
-            Ingredients
-          </h2>
-          <ul className="space-y-2">
-            {ingredients.map((ingredient, i) => (
-              <li key={i} className="flex items-start gap-2.5">
-                <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: "#D4A574" }} />
-                <span className="text-sm" style={{ color: "#2C3E50" }}>{ingredient}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Ingredients — interactive checklist */}
+      <div className="mb-5">
+        <IngredientsChecklist ingredients={ingredients} />
+      </div>
 
-        <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-          <h2 className="text-base font-bold mb-4 flex items-center gap-2" style={{ color: "#2C3E50" }}>
-            <ChefHat size={16} style={{ color: "#2D5F5D" }} />
-            Instructions
-          </h2>
-          <ol className="space-y-3">
-            {instructions.map((step, i) => (
-              <li key={i} className="flex gap-3">
-                <span
-                  className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5"
-                  style={{ backgroundColor: "#2D5F5D", color: "white" }}
-                >
-                  {i + 1}
-                </span>
-                <span className="text-sm leading-relaxed" style={{ color: "#2C3E50" }}>{step}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
+      {/* Instructions — full width */}
+      <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+        <h2 className="text-base font-bold mb-5 flex items-center gap-2" style={{ color: "#2C3E50" }}>
+          <ChefHat size={16} style={{ color: "#2D5F5D" }} />
+          Instructions
+        </h2>
+        <ol className="space-y-4">
+          {instructions.map((step, i) => (
+            <li key={i} className="flex gap-4">
+              <span
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+                style={{ backgroundColor: "#2D5F5D", color: "white" }}>
+                {i + 1}
+              </span>
+              <p className="text-sm leading-relaxed pt-1" style={{ color: "#2C3E50" }}>{step}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </div>
   )
