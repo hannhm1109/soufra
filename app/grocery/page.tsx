@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
+import PrintGroceryButton from "@/components/print-grocery-button"
 
 export const dynamic = "force-dynamic"
 
@@ -55,91 +56,135 @@ export default async function GroceryPage() {
     "Other": "🛒",
   }
 
+  const printDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  })
+
   return (
     <div className="max-w-4xl mx-auto">
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: "#2C3E50" }}>
-            Grocery List
-            <ShoppingCart size={22} style={{ color: "#2D5F5D" }} />
-          </h1>
-          <p style={{ color: "#6B7280" }}>
-            Auto-generated from your weekly meal plan
-          </p>
-        </div>
-        <GenerateGroceryButton />
-      </div>
+      {/* ── Screen UI ─────────────────────────────────────────── */}
+      <div data-no-print>
 
-      {groceryList ? (
-        <>
-          {/* Budget tracker */}
-          <div
-            className="rounded-2xl p-6 mb-6"
-            style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Wallet size={20} style={{ color: "#2D5F5D" }} />
-                <span className="font-semibold" style={{ color: "#2C3E50" }}>
-                  Budget Tracker
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: "#2C3E50" }}>
+              Grocery List
+              <ShoppingCart size={22} style={{ color: "#2D5F5D" }} />
+            </h1>
+            <p style={{ color: "#6B7280" }}>
+              Auto-generated from your weekly meal plan
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {groceryList && <PrintGroceryButton />}
+            <GenerateGroceryButton />
+          </div>
+        </div>
+
+        {groceryList ? (
+          <>
+            {/* Budget tracker */}
+            <div
+              className="rounded-2xl p-6 mb-6"
+              style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Wallet size={20} style={{ color: "#2D5F5D" }} />
+                  <span className="font-semibold" style={{ color: "#2C3E50" }}>
+                    Budget Tracker
+                  </span>
+                </div>
+                <span className="font-bold text-lg" style={{ color: budgetColor }}>
+                  {groceryList.totalCost?.toFixed(0)} / {user.weeklyBudget} DH
                 </span>
               </div>
-              <span className="font-bold text-lg" style={{ color: budgetColor }}>
-                {groceryList.totalCost?.toFixed(0)} / {user.weeklyBudget} DH
-              </span>
-            </div>
-            <div className="h-3 rounded-full mb-2" style={{ backgroundColor: "#E5E7EB" }}>
-              <div
-                className="h-3 rounded-full transition-all"
-                style={{ width: `${budgetPercent}%`, backgroundColor: budgetColor }}
-              />
-            </div>
-            <div className="flex items-center gap-1.5 text-sm" style={{
-              color: budgetPercent < 90 ? "#27AE60" : budgetPercent < 100 ? "#E67E22" : "#E74C3C"
-            }}>
-              {budgetPercent < 90
-                ? <><CheckCircle size={14} /> {(user.weeklyBudget! - groceryList.totalCost!).toFixed(0)} DH under budget</>
-                : budgetPercent < 100
-                ? <><AlertTriangle size={14} /> Getting close to your budget</>
-                : <><XCircle size={14} /> Over budget by {(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH</>
-              }
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[
-              { label: "Total Items", value: groceryList.items.length },
-              { label: "Categories", value: Object.keys(grouped).length },
-              { label: "Est. Cost", value: `${groceryList.totalCost?.toFixed(0)} DH` },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="rounded-xl p-4 text-center"
-                style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-                <p className="text-2xl font-bold" style={{ color: "#2D5F5D" }}>{value}</p>
-                <p className="text-sm" style={{ color: "#6B7280" }}>{label}</p>
+              <div className="h-3 rounded-full mb-2" style={{ backgroundColor: "#E5E7EB" }}>
+                <div
+                  className="h-3 rounded-full transition-all"
+                  style={{ width: `${budgetPercent}%`, backgroundColor: budgetColor }}
+                />
               </div>
-            ))}
+              <div className="flex items-center gap-1.5 text-sm" style={{
+                color: budgetPercent < 90 ? "#27AE60" : budgetPercent < 100 ? "#E67E22" : "#E74C3C"
+              }}>
+                {budgetPercent < 90
+                  ? <><CheckCircle size={14} /> {(user.weeklyBudget! - groceryList.totalCost!).toFixed(0)} DH under budget</>
+                  : budgetPercent < 100
+                  ? <><AlertTriangle size={14} /> Getting close to your budget</>
+                  : <><XCircle size={14} /> Over budget by {(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH</>
+                }
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[
+                { label: "Total Items", value: groceryList.items.length },
+                { label: "Categories", value: Object.keys(grouped).length },
+                { label: "Est. Cost", value: `${groceryList.totalCost?.toFixed(0)} DH` },
+              ].map(({ label, value }) => (
+                <div
+                  key={label}
+                  className="rounded-xl p-4 text-center"
+                  style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                  <p className="text-2xl font-bold" style={{ color: "#2D5F5D" }}>{value}</p>
+                  <p className="text-sm" style={{ color: "#6B7280" }}>{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Interactive list */}
+            <GroceryItemsList grouped={grouped} categoryEmojis={categoryEmojis} />
+          </>
+        ) : (
+          <div
+            className="rounded-2xl p-16 text-center"
+            style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <ShoppingCart size={48} className="mx-auto mb-4" style={{ color: "#D1D5DB" }} />
+            <h3 className="text-xl font-bold mb-2" style={{ color: "#2C3E50" }}>
+              No grocery list yet
+            </h3>
+            <p className="mb-6" style={{ color: "#6B7280" }}>
+              Generate a meal plan first, then create your grocery list
+            </p>
+            <GenerateGroceryButton />
+          </div>
+        )}
+      </div>
+
+      {/* ── Print-only area ───────────────────────────────────── */}
+      {groceryList && (
+        <div data-print-area style={{ display: "none" }}>
+          <div className="print-header">
+            <div>
+              <div className="print-title">Soufra — Grocery List</div>
+              <div className="print-date">{printDate}</div>
+            </div>
+            <div className="print-date">
+              Est. {groceryList.totalCost?.toFixed(0)} DH
+              {user.weeklyBudget ? ` / ${user.weeklyBudget} DH budget` : ""}
+            </div>
           </div>
 
-          {/* Items by category */}
-          <GroceryItemsList grouped={grouped} categoryEmojis={categoryEmojis} />
-        </>
-      ) : (
-        /* Empty state */
-        <div
-          className="rounded-2xl p-16 text-center"
-          style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <ShoppingCart size={48} className="mx-auto mb-4" style={{ color: "#D1D5DB" }} />
-          <h3 className="text-xl font-bold mb-2" style={{ color: "#2C3E50" }}>
-            No grocery list yet
-          </h3>
-          <p className="mb-6" style={{ color: "#6B7280" }}>
-            Generate a meal plan first, then create your grocery list
-          </p>
-          <GenerateGroceryButton />
+          {Object.entries(grouped).map(([category, items]) => (
+            <div key={category} className="print-category">
+              <div className="print-category-header">{category}</div>
+              {items.map(item => (
+                <div key={item.id} className="print-item">
+                  <div className="print-item-left">
+                    <div className="print-checkbox" />
+                    <span>{item.name}</span>
+                    <span className="print-qty">{item.quantity}</span>
+                  </div>
+                  {item.price != null && (
+                    <span className="print-price">~{item.price} DH</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       )}
     </div>

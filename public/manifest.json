@@ -1,0 +1,25 @@
+{
+  "name": "Soufra — Smart Meal Planner",
+  "short_name": "Soufra",
+  "description": "AI-powered meal planning for Moroccan & Mediterranean cuisines",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDFAF6",
+  "theme_color": "#2D5F5D",
+  "categories": ["food", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

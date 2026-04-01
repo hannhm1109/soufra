@@ -62,3 +62,100 @@ body {
   animation: shimmer 1.6s ease-in-out infinite;
   border-radius: 8px;
 }
+
+/* ── Print / PDF styles ─────────────────────────────────── */
+@media print {
+  /* Hide everything that isn't the grocery content */
+  nav, aside, header,
+  [data-no-print],
+  .lg\\:ml-64 > *:not([data-print-area]) {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    font-family: Georgia, serif;
+    color: #1a1a1a;
+  }
+
+  [data-print-area] {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #2D5F5D;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+
+  .print-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2D5F5D;
+  }
+
+  .print-date {
+    font-size: 12px;
+    color: #6B7280;
+  }
+
+  .print-category {
+    break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .print-category-header {
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #2D5F5D;
+    border-bottom: 1px solid #E5E7EB;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+
+  .print-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed #F3F4F6;
+  }
+
+  .print-item-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .print-checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #D1D5DB;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .print-qty {
+    font-size: 11px;
+    color: #6B7280;
+  }
+
+  .print-price {
+    font-size: 12px;
+    font-weight: 600;
+    color: #2D5F5D;
+  }
+
+  /* Force page break between sections if needed */
+  @page {
+    margin: 1.5cm 2cm;
+  }
+}
