@@ -65,97 +65,229 @@ body {
 
 /* ── Print / PDF styles ─────────────────────────────────── */
 @media print {
-  /* Hide everything that isn't the grocery content */
-  nav, aside, header,
-  [data-no-print],
-  .lg\\:ml-64 > *:not([data-print-area]) {
-    display: none !important;
-  }
+  @page { margin: 1.2cm 1.5cm; }
 
-  body {
-    background: white !important;
-    font-family: Georgia, serif;
-    color: #1a1a1a;
+  /* Hide everything except the print area */
+  body > *,
+  [data-no-print] {
+    display: none !important;
   }
 
   [data-print-area] {
     display: block !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    width: 100%;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #1a1a1a;
+    font-size: 11px;
   }
 
-  .print-header {
+  /* ── Banner ── */
+  .pdf-banner {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 2px solid #2D5F5D;
-    padding-bottom: 12px;
-    margin-bottom: 24px;
+    background-color: #2D5F5D !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: white;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 16px;
   }
-
-  .print-title {
-    font-size: 22px;
-    font-weight: bold;
+  .pdf-banner-left {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+  }
+  .pdf-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: #D4A574 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 900;
     color: #2D5F5D;
   }
-
-  .print-date {
-    font-size: 12px;
-    color: #6B7280;
+  .pdf-app-name {
+    font-size: 20px;
+    font-weight: 800;
+    color: #D4A574;
+    letter-spacing: 0.02em;
+  }
+  .pdf-app-sub {
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    margin-top: 1px;
+  }
+  .pdf-banner-right { text-align: right; }
+  .pdf-list-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+  }
+  .pdf-list-date {
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    margin-top: 2px;
   }
 
-  .print-category {
-    break-inside: avoid;
-    margin-bottom: 20px;
+  /* ── Stats row ── */
+  .pdf-stats {
+    display: flex !important;
+    align-items: center;
+    gap: 0;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 12px 20px;
+    margin-bottom: 12px;
   }
-
-  .print-category-header {
-    font-size: 13px;
-    font-weight: bold;
+  .pdf-stat {
+    flex: 1;
+    text-align: center;
+  }
+  .pdf-stat-value {
+    font-size: 16px;
+    font-weight: 800;
+    color: #2D5F5D;
+  }
+  .pdf-stat-label {
+    font-size: 9px;
+    color: #9CA3AF;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #2D5F5D;
-    border-bottom: 1px solid #E5E7EB;
-    padding-bottom: 4px;
-    margin-bottom: 8px;
+    margin-top: 2px;
+  }
+  .pdf-stat-divider {
+    width: 1px;
+    height: 30px;
+    background-color: #E5E7EB !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
-  .print-item {
-    display: flex;
+  /* ── Budget bar ── */
+  .pdf-budget-bar-wrap {
+    margin-bottom: 16px;
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+  }
+  .pdf-budget-bar-track {
+    flex: 1;
+    height: 6px;
+    background-color: #F3F4F6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .pdf-budget-bar-fill {
+    height: 6px;
+    border-radius: 99px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .pdf-budget-label {
+    font-size: 10px;
+    color: #6B7280;
+    white-space: nowrap;
+  }
+
+  /* ── 2-column category grid ── */
+  .pdf-categories {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .pdf-cat-block {
+    break-inside: avoid;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .pdf-cat-header {
+    display: flex !important;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 0;
-    font-size: 13px;
-    border-bottom: 1px dashed #F3F4F6;
+    background-color: #F0F7F7 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 7px 10px;
+    border-bottom: 1px solid #E5E7EB;
   }
-
-  .print-item-left {
-    display: flex;
+  .pdf-cat-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #2D5F5D;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .pdf-cat-count {
+    font-size: 9px;
+    color: #9CA3AF;
+  }
+  .pdf-items { padding: 4px 0; }
+  .pdf-item {
+    display: flex !important;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    padding: 5px 10px;
+    border-bottom: 1px solid #F9FAFB;
   }
-
-  .print-checkbox {
-    width: 14px;
-    height: 14px;
+  .pdf-item:last-child { border-bottom: none; }
+  .pdf-item-left {
+    display: flex !important;
+    align-items: center;
+    gap: 7px;
+    flex: 1;
+    min-width: 0;
+  }
+  .pdf-checkbox {
+    width: 12px;
+    height: 12px;
     border: 1.5px solid #D1D5DB;
     border-radius: 3px;
     flex-shrink: 0;
   }
-
-  .print-qty {
+  .pdf-item-name {
     font-size: 11px;
-    color: #6B7280;
+    color: #2C3E50;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
-  .print-price {
-    font-size: 12px;
-    font-weight: 600;
+  .pdf-item-qty {
+    font-size: 9px;
+    color: #9CA3AF;
+    background-color: #F3F4F6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 1px 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .pdf-item-price {
+    font-size: 10px;
+    font-weight: 700;
     color: #2D5F5D;
+    margin-left: 6px;
+    white-space: nowrap;
   }
 
-  /* Force page break between sections if needed */
-  @page {
-    margin: 1.5cm 2cm;
+  /* ── Footer ── */
+  .pdf-footer {
+    display: flex !important;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #E5E7EB;
+    font-size: 9px;
+    color: #9CA3AF;
   }
 }

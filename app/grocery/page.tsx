@@ -157,34 +157,105 @@ export default async function GroceryPage() {
       {/* ── Print-only area ───────────────────────────────────── */}
       {groceryList && (
         <div data-print-area style={{ display: "none" }}>
-          <div className="print-header">
-            <div>
-              <div className="print-title">Soufra — Grocery List</div>
-              <div className="print-date">{printDate}</div>
+
+          {/* ── Branded header banner ── */}
+          <div className="pdf-banner">
+            <div className="pdf-banner-left">
+              <div className="pdf-logo">S</div>
+              <div>
+                <div className="pdf-app-name">Soufra</div>
+                <div className="pdf-app-sub">Smart Meal Planner</div>
+              </div>
             </div>
-            <div className="print-date">
-              Est. {groceryList.totalCost?.toFixed(0)} DH
-              {user.weeklyBudget ? ` / ${user.weeklyBudget} DH budget` : ""}
+            <div className="pdf-banner-right">
+              <div className="pdf-list-title">Weekly Grocery List</div>
+              <div className="pdf-list-date">{printDate}</div>
             </div>
           </div>
 
-          {Object.entries(grouped).map(([category, items]) => (
-            <div key={category} className="print-category">
-              <div className="print-category-header">{category}</div>
-              {items.map(item => (
-                <div key={item.id} className="print-item">
-                  <div className="print-item-left">
-                    <div className="print-checkbox" />
-                    <span>{item.name}</span>
-                    <span className="print-qty">{item.quantity}</span>
-                  </div>
-                  {item.price != null && (
-                    <span className="print-price">~{item.price} DH</span>
-                  )}
-                </div>
-              ))}
+          {/* ── Summary stats row ── */}
+          <div className="pdf-stats">
+            <div className="pdf-stat">
+              <div className="pdf-stat-value">{groceryList.items.length}</div>
+              <div className="pdf-stat-label">Total Items</div>
             </div>
-          ))}
+            <div className="pdf-stat-divider" />
+            <div className="pdf-stat">
+              <div className="pdf-stat-value">{Object.keys(grouped).length}</div>
+              <div className="pdf-stat-label">Categories</div>
+            </div>
+            <div className="pdf-stat-divider" />
+            <div className="pdf-stat">
+              <div className="pdf-stat-value">{groceryList.totalCost?.toFixed(0)} DH</div>
+              <div className="pdf-stat-label">Est. Total</div>
+            </div>
+            {user.weeklyBudget && (
+              <>
+                <div className="pdf-stat-divider" />
+                <div className="pdf-stat">
+                  <div className="pdf-stat-value" style={{
+                    color: (groceryList.totalCost ?? 0) > user.weeklyBudget ? "#c0392b" : "#27AE60"
+                  }}>
+                    {user.weeklyBudget} DH
+                  </div>
+                  <div className="pdf-stat-label">Budget</div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── Budget progress bar ── */}
+          {user.weeklyBudget && (
+            <div className="pdf-budget-bar-wrap">
+              <div className="pdf-budget-bar-track">
+                <div
+                  className="pdf-budget-bar-fill"
+                  style={{
+                    width: `${Math.min(((groceryList.totalCost ?? 0) / user.weeklyBudget) * 100, 100)}%`,
+                    backgroundColor: budgetPercent >= 100 ? "#c0392b" : budgetPercent >= 80 ? "#e67e22" : "#27AE60",
+                  }}
+                />
+              </div>
+              <div className="pdf-budget-label">
+                {budgetPercent < 100
+                  ? `${(user.weeklyBudget - (groceryList.totalCost ?? 0)).toFixed(0)} DH remaining`
+                  : `Over budget by ${((groceryList.totalCost ?? 0) - user.weeklyBudget).toFixed(0)} DH`}
+              </div>
+            </div>
+          )}
+
+          {/* ── Category sections in 2-column grid ── */}
+          <div className="pdf-categories">
+            {Object.entries(grouped).map(([category, items]) => (
+              <div key={category} className="pdf-cat-block">
+                <div className="pdf-cat-header">
+                  <span className="pdf-cat-name">{category}</span>
+                  <span className="pdf-cat-count">{items.length} items</span>
+                </div>
+                <div className="pdf-items">
+                  {items.map(item => (
+                    <div key={item.id} className="pdf-item">
+                      <div className="pdf-item-left">
+                        <div className="pdf-checkbox" />
+                        <span className="pdf-item-name">{item.name}</span>
+                        <span className="pdf-item-qty">{item.quantity}</span>
+                      </div>
+                      {item.price != null && (
+                        <span className="pdf-item-price">{item.price} DH</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Footer ── */}
+          <div className="pdf-footer">
+            <span>Generated by Soufra — soufra.app</span>
+            <span>{printDate}</span>
+          </div>
+
         </div>
       )}
     </div>
