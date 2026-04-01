@@ -5,6 +5,7 @@ import { Clock, Flame, ChefHat, ArrowLeft, Users } from "lucide-react"
 import Link from "next/link"
 import FeedbackButtons from "@/components/feedback-buttons"
 import IngredientsChecklist from "@/components/ingredients-checklist"
+import InstructionsSteps from "@/components/instructions-steps"
 
 const cuisineLabel: Record<string, string> = {
   moroccan:       "Moroccan",
@@ -117,25 +118,8 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
         <IngredientsChecklist ingredients={ingredients} />
       </div>
 
-      {/* Instructions — full width */}
-      <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-        <h2 className="text-base font-bold mb-5 flex items-center gap-2" style={{ color: "#2C3E50" }}>
-          <ChefHat size={16} style={{ color: "#2D5F5D" }} />
-          Instructions
-        </h2>
-        <ol className="space-y-4">
-          {instructions.map((step, i) => (
-            <li key={i} className="flex gap-4">
-              <span
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
-                style={{ backgroundColor: "#2D5F5D", color: "white" }}>
-                {i + 1}
-              </span>
-              <p className="text-sm leading-relaxed pt-1" style={{ color: "#2C3E50" }}>{step}</p>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {/* Instructions — interactive steps + cook mode */}
+      <InstructionsSteps instructions={instructions} />
     </div>
   )
 }
