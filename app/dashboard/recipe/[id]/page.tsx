@@ -119,7 +119,7 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Instructions — interactive steps + cook mode */}
-      <InstructionsSteps instructions={instructions} />
+      <InstructionsSteps instructions={instructions} recipeId={recipe.id} />
     </div>
   )
 }

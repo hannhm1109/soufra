@@ -51,6 +51,16 @@ body {
 }
 .dot-bounce { animation: dotBounce 1.2s ease-in-out infinite; }
 
+/* Cook Mode step transitions */
+@keyframes cookStepIn {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes cookStepInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
 /* Skeleton shimmer */
 @keyframes shimmer {
   0%   { background-position: -600px 0; }
