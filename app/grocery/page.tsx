@@ -5,6 +5,8 @@ import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucid
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
 
+export const dynamic = "force-dynamic"
+
 export default async function GroceryPage() {
   const session = await auth()
   if (!session?.user?.email) redirect("/login")
