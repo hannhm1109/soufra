@@ -35,8 +35,9 @@ function calculateCalories(data: Record<string, string>) {
   const height = parseFloat(data.height)
   const age = parseInt(data.age)
 
-  // Mifflin-St Jeor formula
-  const bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  // Mifflin-St Jeor formula (gender-aware)
+  const offset = data.gender === "female" ? -161 : 5
+  const bmr = 10 * weight + 6.25 * height - 5 * age + offset
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,
@@ -51,5 +52,5 @@ function calculateCalories(data: Record<string, string>) {
   if (data.fitnessGoal === "lose_weight") calories -= 500
   if (data.fitnessGoal === "gain_muscle") calories += 300
 
-  return calories
+  return Math.min(3500, Math.max(1200, calories))
 }

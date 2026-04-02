@@ -28,6 +28,7 @@ export default async function SettingsPage() {
 
       <SettingsForm user={{
         name: user.name || "",
+        gender: user.gender || "",
         age: user.age?.toString() || "",
         weight: user.weight?.toString() || "",
         height: user.height?.toString() || "",

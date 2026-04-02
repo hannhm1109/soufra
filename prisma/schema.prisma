@@ -19,6 +19,7 @@ model User {
   fitnessGoal   String?
   activityLevel String?
   calorieTarget Int?
+  gender        String?
   allergies     String[]
   cuisines      String[]
   weeklyBudget  Float?

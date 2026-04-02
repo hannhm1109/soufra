@@ -41,6 +41,7 @@ const activityLevels = [
 
 interface UserData {
   name: string
+  gender: string
   age: string
   weight: string
   height: string
@@ -57,14 +58,15 @@ function calcCalories(d: UserData) {
   const age    = parseInt(d.age)
   if (!weight || !height || !age) return null
 
-  const bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  const offset = d.gender === "female" ? -161 : 5
+  const bmr = 10 * weight + 6.25 * height - 5 * age + offset
   const multipliers: Record<string, number> = {
     sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725,
   }
   let cal = Math.round(bmr * (multipliers[d.activityLevel] || 1.55))
   if (d.fitnessGoal === "lose_weight") cal -= 500
   if (d.fitnessGoal === "gain_muscle") cal += 300
-  return cal
+  return Math.min(3500, Math.max(1200, cal))
 }
 
 const INPUT_CLASS =
@@ -167,6 +169,34 @@ export default function SettingsForm({ user }: { user: UserData }) {
               className={INPUT_CLASS}
               placeholder="Your name"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>Biological Sex <span className="font-normal" style={{ color: "#9CA3AF" }}>(for calorie calculation)</span></label>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { value: "male",   label: "Male"   },
+                { value: "female", label: "Female" },
+              ].map(opt => {
+                const selected = data.gender === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => update("gender", opt.value)}
+                    className="p-3 rounded-xl border-2 text-sm font-medium transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
+                    style={{
+                      borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                      backgroundColor: selected ? "#F0F7F7" : "white",
+                      color: selected ? "#2D5F5D" : "#6B7280",
+                    }}
+                  >
+                    {selected && <Check size={13} className="inline mr-1.5" />}
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

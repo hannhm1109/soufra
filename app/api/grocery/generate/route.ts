@@ -76,6 +76,53 @@ function extractBaseName(ingredient: string): string {
     .trim()
 }
 
+const UNIT_NORMALIZE: Record<string, string> = {
+  g: "g", gram: "g", grams: "g",
+  kg: "kg", kilogram: "kg", kilograms: "kg",
+  ml: "ml", milliliter: "ml", millilitre: "ml",
+  l: "l", liter: "l", litre: "l",
+  tbsp: "tbsp", tablespoon: "tbsp", tablespoons: "tbsp",
+  tsp: "tsp", teaspoon: "tsp", teaspoons: "tsp",
+  cup: "cup", cups: "cup",
+  clove: "clove", cloves: "clove",
+  bunch: "bunch",
+  can: "can", cans: "can",
+  jar: "jar",
+  piece: "pc", pieces: "pc", pcs: "pc",
+  slice: "slice", slices: "slice",
+}
+
+function parseQty(ingredient: string): { value: number; unit: string } | null {
+  const m = ingredient.trim().match(/^(\d+(?:\.\d+)?)\s*([a-z]+)?/i)
+  if (!m) return null
+  const value = parseFloat(m[1])
+  if (isNaN(value)) return null
+  const raw = (m[2] || "").toLowerCase()
+  const unit = UNIT_NORMALIZE[raw] || raw || "x"
+  return { value, unit }
+}
+
+function aggregateQuantity(instances: string[]): string {
+  if (instances.length === 1) {
+    const m = instances[0].match(/^[\d.]+\s*[a-z]*/i)
+    return m ? m[0].trim() : "1"
+  }
+
+  const parsed = instances.map(parseQty)
+  const allParsed = parsed.filter((p): p is { value: number; unit: string } => p !== null)
+
+  if (allParsed.length === instances.length) {
+    const units = [...new Set(allParsed.map(p => p.unit))]
+    if (units.length === 1) {
+      const total = allParsed.reduce((s, p) => s + p.value, 0)
+      const rounded = total % 1 === 0 ? total : parseFloat(total.toFixed(1))
+      return units[0] !== "x" ? `${rounded}${units[0]}` : `${rounded}`
+    }
+  }
+
+  return `×${instances.length}`
+}
+
 // Check if two ingredients refer to the same thing
 function isSameIngredient(a: string, b: string): boolean {
   const baseA = extractBaseName(a)
@@ -139,23 +186,31 @@ export async function POST() {
     allIngredients.push(...ingredients)
   }
 
-  // Smart deduplication
-  const deduplicated: string[] = []
+  // Group matching ingredients and aggregate their quantities
+  const groups = new Map<string, string[]>()
+  const groupKeys: string[] = []
+
   for (const ingredient of allIngredients) {
-    const alreadyExists = deduplicated.some(existing =>
-      isSameIngredient(existing, ingredient)
-    )
-    if (!alreadyExists) {
-      deduplicated.push(ingredient)
+    let matched = false
+    for (const key of groupKeys) {
+      if (isSameIngredient(key, ingredient)) {
+        groups.get(key)!.push(ingredient)
+        matched = true
+        break
+      }
+    }
+    if (!matched) {
+      groups.set(ingredient, [ingredient])
+      groupKeys.push(ingredient)
     }
   }
 
-  // Build grocery items
-  const groceryItems = deduplicated.map(ingredient => ({
-    name: ingredient,
-    quantity: "1",
-    category: getCategory(ingredient),
-    price: getPrice(ingredient),
+  // Build grocery items with real aggregated quantities
+  const groceryItems = Array.from(groups.entries()).map(([canonical, instances]) => ({
+    name: canonical,
+    quantity: aggregateQuantity(instances),
+    category: getCategory(canonical),
+    price: getPrice(canonical),
   }))
 
   const totalCost = groceryItems.reduce((sum, item) => sum + item.price, 0)
