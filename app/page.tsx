@@ -331,7 +331,7 @@ export default function LandingPage() {
             <h2
               className="text-4xl font-bold mb-4"
               style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
-              Other apps don't get you
+              Other apps don&apos;t get you
             </h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6B7280" }}>
               Generic nutrition apps were built for a different culture. Soufra was built for yours.
@@ -577,7 +577,7 @@ export default function LandingPage() {
           </h2>
 
           <p className="text-xl mb-10" style={{ color: "rgba(255,255,255,0.7)" }}>
-            Join food lovers across Morocco and the Mediterranean who've discovered
+            Join food lovers across Morocco and the Mediterranean who&apos;ve discovered
             the joy of culturally intelligent meal planning.
           </p>
 

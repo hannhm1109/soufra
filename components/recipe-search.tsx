@@ -61,7 +61,7 @@ export default function RecipeSearch({ recipes, feedbackMap }: Props) {
   const cuisines = ["all", ...Array.from(new Set(recipes.map(r => r.cuisine)))]
 
   const filtered = useMemo(() => {
-    let result = recipes.filter(recipe => {
+    const result = recipes.filter(recipe => {
       const q = search.toLowerCase()
       const matchesSearch = !q ||
         recipe.name.toLowerCase().includes(q) ||
@@ -127,7 +127,7 @@ export default function RecipeSearch({ recipes, feedbackMap }: Props) {
           { label: "Total recipes", value: recipes.length, color: "#2D5F5D", bg: "#F0F7F7" },
           { label: "Liked", value: likedCount, color: "#E74C3C", bg: "#FFF0F0" },
           { label: "Cuisines", value: cuisines.length - 1, color: "#E67E22", bg: "#FFF7F0" },
-        ].map(({ label, value, color, bg }) => (
+        ].map(({ label, value, color }) => (
           <div
             key={label}
             className="rounded-2xl p-4 text-center"

@@ -235,7 +235,7 @@ export default function InstructionsSteps({
             className="flex items-center gap-2 px-6 py-3 text-xs"
             style={{ backgroundColor: "#FFFBF5", borderBottom: "1px solid #FEF3E2", color: "#92400E" }}>
             <Wand2 size={12} />
-            These instructions are brief — tap "Enhance with AI" for detailed beginner-friendly steps
+            These instructions are brief — tap &quot;Enhance with AI&quot; for detailed beginner-friendly steps
           </div>
         )}
 

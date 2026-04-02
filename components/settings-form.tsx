@@ -57,7 +57,7 @@ function calcCalories(d: UserData) {
   const age    = parseInt(d.age)
   if (!weight || !height || !age) return null
 
-  let bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  const bmr = 10 * weight + 6.25 * height - 5 * age + 5
   const multipliers: Record<string, number> = {
     sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725,
   }

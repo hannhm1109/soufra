@@ -163,7 +163,7 @@ export default async function FavoritesPage() {
             No favorites yet
           </h3>
           <p className="mb-6" style={{ color: "#6B7280" }}>
-            Like recipes from your meal plan and they'll appear here
+            Like recipes from your meal plan and they&apos;ll appear here
           </p>
           <Link
             href="/dashboard"

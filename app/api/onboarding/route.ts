@@ -30,13 +30,13 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true })
 }
 
-function calculateCalories(data: any) {
+function calculateCalories(data: Record<string, string>) {
   const weight = parseFloat(data.weight)
   const height = parseFloat(data.height)
   const age = parseInt(data.age)
 
   // Mifflin-St Jeor formula
-  let bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  const bmr = 10 * weight + 6.25 * height - 5 * age + 5
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,

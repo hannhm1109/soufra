@@ -13,8 +13,17 @@ export async function POST(req: Request) {
 
   const { recipeId } = await req.json()
 
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
   const recipe = await prisma.recipe.findUnique({ where: { id: recipeId } })
   if (!recipe) return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
+
+  // Verify the recipe belongs to this user via a meal plan slot
+  const ownership = await prisma.mealPlanSlot.findFirst({
+    where: { recipeId, mealPlan: { userId: user.id } },
+  })
+  if (!ownership) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const ingredients  = recipe.ingredients  as string[]
   const instructions = recipe.instructions as string[]

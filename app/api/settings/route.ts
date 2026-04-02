@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 
-function calculateCalories(data: any) {
+function calculateCalories(data: Record<string, string>) {
   const weight = parseFloat(data.weight)
   const height = parseFloat(data.height)
   const age = parseInt(data.age)
 
-  let bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  const bmr = 10 * weight + 6.25 * height - 5 * age + 5
 
   const activityMultipliers: Record<string, number> = {
     sedentary: 1.2,
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     revalidatePath("/settings")
 
     return NextResponse.json({ success: true, calorieTarget })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to save settings" }, { status: 500 })
   }
 }

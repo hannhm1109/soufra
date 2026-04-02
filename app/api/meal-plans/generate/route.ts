@@ -5,6 +5,24 @@ import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
+interface RawMeal {
+  name?: string
+  dayOfWeek?: number
+  mealType?: string
+  cuisine?: string
+  prepTime?: number
+  cookTime?: number
+  servings?: number
+  difficulty?: string
+  calories?: number
+  protein?: number
+  carbs?: number
+  fats?: number
+  ingredients?: string[]
+  instructions?: string[]
+  tags?: string[]
+}
+
 // Strip markdown code fences GPT sometimes wraps JSON in
 function extractJSON(raw: string): string {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
@@ -203,36 +221,54 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
     if (!raw) throw new Error("No response from OpenAI")
 
     const parsed = JSON.parse(extractJSON(raw))
-    const meals: any[] = parsed.meals
+    const meals = parsed.meals as RawMeal[]
 
     if (!Array.isArray(meals) || meals.length === 0) {
       throw new Error("Invalid meal plan structure")
     }
 
-    // Deactivate old plans
-    await prisma.mealPlan.updateMany({
-      where: { userId: user.id, isActive: true },
-      data: { isActive: false },
+    // ── Pre-validate and deduplicate before touching the DB ─────────────────
+    const seen = new Set<string>()
+    const validMeals = meals.filter(meal => {
+      if (!meal.name || meal.dayOfWeek == null || !meal.mealType) return false
+      const key = `${meal.dayOfWeek}:${meal.mealType}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
     })
 
-    // Create new plan
-    const mealPlan = await prisma.mealPlan.create({
-      data: { userId: user.id, weekStart: new Date(), isActive: true },
-    })
+    // Require at least 18/21 slots before committing anything
+    const MIN_SLOTS = 18
+    if (validMeals.length < MIN_SLOTS) {
+      throw new Error(`Insufficient meal plan: only ${validMeals.length} valid slots (need ${MIN_SLOTS})`)
+    }
 
-    // Create recipes and slots — skip any malformed entries
+    // ── Atomic transaction: deactivate old → create new ──────────────────────
+    let mealPlan!: { id: string }
     let created = 0
-    for (const meal of meals) {
-      if (!meal.name || meal.dayOfWeek == null || !meal.mealType) continue
-      try {
-        const recipe = await prisma.recipe.create({
+
+    await prisma.$transaction(async (tx) => {
+      // Deactivate existing active plans
+      await tx.mealPlan.updateMany({
+        where: { userId: user.id, isActive: true },
+        data: { isActive: false },
+      })
+
+      // Create the new plan
+      mealPlan = await tx.mealPlan.create({
+        data: { userId: user.id, weekStart: new Date(), isActive: true },
+      })
+
+      // Create all recipes and slots inside the transaction
+      for (const meal of validMeals) {
+        const recipe = await tx.recipe.create({
           data: {
-            name:         meal.name,
+            name:         meal.name!,
             cuisine:      meal.cuisine      ?? "healthy",
             prepTime:     meal.prepTime     ?? 10,
             cookTime:     meal.cookTime     ?? 15,
             servings:     meal.servings     ?? 2,
-            difficulty:   ["easy","medium","hard"].includes(meal.difficulty) ? meal.difficulty : "easy",
+            difficulty:   ["easy","medium","hard"].includes(meal.difficulty ?? "") ? meal.difficulty! : "easy",
             calories:     meal.calories     ?? 400,
             protein:      meal.protein      ?? 20,
             carbs:        meal.carbs        ?? 40,
@@ -244,21 +280,17 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
           },
         })
 
-        await prisma.mealPlanSlot.create({
+        await tx.mealPlanSlot.create({
           data: {
-            mealPlanId: mealPlan.id,
+            mealPlanId: mealPlan!.id,
             recipeId:   recipe.id,
-            dayOfWeek:  meal.dayOfWeek,
-            mealType:   meal.mealType,
+            dayOfWeek:  meal.dayOfWeek!,
+            mealType:   meal.mealType!,
           },
         })
         created++
-      } catch {
-        // skip duplicate slots (same day+mealType) silently
       }
-    }
-
-    if (created === 0) throw new Error("No valid meals could be saved")
+    }, { timeout: 30000 })
 
     // Persist learned preferences
     if (patterns) {
