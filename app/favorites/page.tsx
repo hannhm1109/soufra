@@ -49,7 +49,7 @@ export default async function FavoritesPage() {
         <>
           {/* Stats */}
           <div
-            className="rounded-2xl p-4 mb-6 flex items-center gap-6"
+            className="rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-x-5 gap-y-2"
             style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
             <div className="flex items-center gap-2">
               <Heart size={18} style={{ color: "#E74C3C" }} fill="#E74C3C" />
@@ -57,25 +57,24 @@ export default async function FavoritesPage() {
                 {likedRecipes.length} liked recipes
               </span>
             </div>
-            <div className="h-4 w-px" style={{ backgroundColor: "#E5E7EB" }} />
             <span className="text-sm" style={{ color: "#6B7280" }}>
               Avg. {Math.round(likedRecipes.reduce((s, r) => s + r.calories, 0) / likedRecipes.length)} cal per recipe
             </span>
-            <div className="h-4 w-px" style={{ backgroundColor: "#E5E7EB" }} />
             <span className="text-sm" style={{ color: "#6B7280" }}>
-              Most loved: {
-                Object.entries(
+              Most loved:{" "}
+              <span className="font-medium" style={{ color: "#2C3E50" }}>
+                {Object.entries(
                   likedRecipes.reduce((acc, r) => ({
                     ...acc,
                     [r.cuisine]: (acc[r.cuisine] || 0) + 1
                   }), {} as Record<string, number>)
-                ).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A"
-              } cuisine
+                ).sort((a, b) => b[1] - a[1])[0]?.[0] || "N/A"}
+              </span> cuisine
             </span>
           </div>
 
           {/* Recipe Grid */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {likedRecipes.map((recipe) => {
               const colors = cuisineColors[recipe.cuisine] || { bg: "#F0F7F7", color: "#2D5F5D" }
               return (

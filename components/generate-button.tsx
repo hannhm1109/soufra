@@ -64,7 +64,7 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
         <button
           onClick={handleGenerate}
           disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-100 disabled:scale-100 disabled:opacity-70"
+          className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-100 disabled:scale-100 disabled:opacity-70 text-sm sm:text-base"
           style={{ backgroundColor: "#E67E22" }}>
           {loading ? (
             <>

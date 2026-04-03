@@ -122,7 +122,7 @@ export default async function DashboardPage() {
     <div className="max-w-7xl mx-auto">
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="fade-in-up flex items-start justify-between mb-8" style={{ animationDelay: "0ms" }}>
+      <div className="fade-in-up flex flex-wrap items-start justify-between gap-4 mb-8" style={{ animationDelay: "0ms" }}>
         <div>
           <h1 className="text-3xl font-bold mb-1" style={{ color: "#2C3E50" }}>
             {greeting}, {firstName} 👋
@@ -135,7 +135,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">
         {[
           {
             label: "Daily Calories",
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
         ].map(({ label, value, sub, icon: Icon, color, bg, delay }) => (
           <div
             key={label}
-            className="fade-in-up p-5 rounded-2xl flex items-center gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default"
+            className="fade-in-up p-4 sm:p-5 rounded-2xl flex items-center gap-3 sm:gap-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-default"
             style={{
               backgroundColor: "white",
               boxShadow: "0 2px 8px rgba(0,0,0,0.05)",

@@ -102,13 +102,13 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
           </div>
         </Link>
 
-        {/* Swap button — appears on card hover */}
+        {/* Swap button — hover on desktop, always visible on touch devices */}
         <button
           onClick={openSwap}
           title="Swap recipe"
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 hover:scale-110"
+          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-70 transition-all duration-150 hover:scale-110 hover:opacity-100 active:scale-95"
           style={{ backgroundColor: "#2D5F5D", color: "white" }}>
-          <RefreshCw size={10} />
+          <RefreshCw size={11} />
         </button>
       </div>
 
