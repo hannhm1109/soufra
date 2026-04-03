@@ -76,6 +76,7 @@ model MealPlanSlot {
   usesLeftovers     Boolean   @default(false)
   hasLeftovers      Boolean   @default(false)
   leftoverServings  Int?
+  whyChosen         String?
   mealPlan          MealPlan  @relation(fields: [mealPlanId], references: [id])
   recipe            Recipe    @relation(fields: [recipeId], references: [id])
   createdAt         DateTime  @default(now())

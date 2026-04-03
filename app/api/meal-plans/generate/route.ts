@@ -21,6 +21,7 @@ interface RawMeal {
   ingredients?: string[]
   instructions?: string[]
   tags?: string[]
+  whyChosen?: string
 }
 
 // Strip markdown code fences GPT sometimes wraps JSON in
@@ -178,6 +179,7 @@ STRICT RULES:
 8. Instructions must be real, actionable cooking steps (minimum 4 steps)
 9. Ingredients must include quantities (e.g. "200g chicken breast", "2 tbsp olive oil")
 10. difficulty must be one of: "easy", "medium", "hard"
+11. whyChosen: one concise sentence (max 15 words) explaining why this specific meal was chosen for this user based on their profile and preferences
 
 Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Exactly this structure:
 {
@@ -197,7 +199,8 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
       "fats": 8,
       "ingredients": ["200g oats", "1 banana", "250ml milk", "1 tbsp honey"],
       "instructions": ["Step 1...", "Step 2...", "Step 3...", "Step 4..."],
-      "tags": ["quick", "high-protein"]
+      "tags": ["quick", "high-protein"],
+      "whyChosen": "Matches your Moroccan preference and fits your breakfast calorie target"
     }
   ]
 }`
@@ -286,6 +289,9 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
             recipeId:   recipe.id,
             dayOfWeek:  meal.dayOfWeek!,
             mealType:   meal.mealType!,
+            whyChosen:  typeof meal.whyChosen === "string" && meal.whyChosen.length > 0
+              ? meal.whyChosen
+              : null,
           },
         })
         created++

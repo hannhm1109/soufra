@@ -1,11 +1,53 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Clock, Flame, ChefHat, ArrowLeft, Users } from "lucide-react"
+import { Clock, Flame, ChefHat, ArrowLeft, Users, Sparkles } from "lucide-react"
 import Link from "next/link"
 import FeedbackButtons from "@/components/feedback-buttons"
 import IngredientsChecklist from "@/components/ingredients-checklist"
 import InstructionsSteps from "@/components/instructions-steps"
+
+interface LearnedPrefs {
+  preferredDifficulty?: string
+  prefersQuick?: boolean
+}
+
+function buildFallbackReason(
+  recipe: { cuisine: string; difficulty: string; calories: number; protein: number; prepTime: number; cookTime: number },
+  user: { cuisines: string[]; fitnessGoal: string | null; calorieTarget: number | null; learnedPrefs: unknown },
+  mealType: string | null
+): string {
+  const prefs = (user.learnedPrefs ?? null) as LearnedPrefs | null
+  const reasons: string[] = []
+
+  if (user.cuisines.includes(recipe.cuisine))
+    reasons.push(`aligns with your ${recipe.cuisine} cuisine preference`)
+
+  if (user.calorieTarget && mealType) {
+    const splits: Record<string, number> = { breakfast: 0.25, lunch: 0.4, dinner: 0.35 }
+    const targetCal = Math.round(user.calorieTarget * (splits[mealType] ?? 0.33))
+    if (Math.abs(recipe.calories - targetCal) / targetCal < 0.25)
+      reasons.push(`fits your ${mealType} calorie target (~${targetCal} kcal)`)
+  }
+
+  if (user.fitnessGoal === "gain_muscle" && recipe.protein >= 25)
+    reasons.push("high in protein to support muscle gain")
+  else if (user.fitnessGoal === "lose_weight" && recipe.calories < 450)
+    reasons.push("a lighter option supporting your weight loss goal")
+  else if (user.fitnessGoal === "eat_better")
+    reasons.push("a wholesome, balanced choice")
+
+  if (prefs?.preferredDifficulty === recipe.difficulty)
+    reasons.push(`matches your preferred ${recipe.difficulty} cooking level`)
+
+  if ((prefs?.prefersQuick || mealType === "breakfast") && recipe.prepTime + recipe.cookTime <= 30)
+    reasons.push("quick and easy to prepare")
+
+  if (reasons.length === 0)
+    return `A personalized ${recipe.cuisine} meal selected to complement your weekly plan.`
+
+  return `Selected because it ${reasons.slice(0, 2).join(" and ")}.`
+}
 
 const cuisineLabel: Record<string, string> = {
   moroccan:       "Moroccan",
@@ -27,8 +69,24 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
   const session = await auth()
   if (!session?.user?.email) redirect("/login")
 
-  const recipe = await prisma.recipe.findUnique({ where: { id } })
+  const [recipe, user] = await Promise.all([
+    prisma.recipe.findUnique({ where: { id } }),
+    prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: {
+        mealPlans: {
+          where: { isActive: true },
+          include: { slots: { where: { recipeId: id } } },
+          take: 1,
+        },
+      },
+    }),
+  ])
+
   if (!recipe) redirect("/dashboard")
+
+  const slot        = user?.mealPlans[0]?.slots[0] ?? null
+  const whyChosen   = slot?.whyChosen ?? (user ? buildFallbackReason(recipe, user, slot?.mealType ?? null) : null)
 
   const ingredients  = recipe.ingredients  as string[]
   const instructions = recipe.instructions as string[]
@@ -97,6 +155,27 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
           </div>
         ))}
       </div>
+
+      {/* Why Soufra chose this */}
+      {whyChosen && (
+        <div
+          className="rounded-2xl p-5 mb-5"
+          style={{ backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }}>
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "#D4A574" }}>
+              <Sparkles size={14} color="white" />
+            </div>
+            <h3 className="font-bold text-sm" style={{ color: "#92400E" }}>
+              Why Soufra chose this meal
+            </h3>
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: "#78350F" }}>
+            {whyChosen}
+          </p>
+        </div>
+      )}
 
       {/* Feedback + tags */}
       <div
