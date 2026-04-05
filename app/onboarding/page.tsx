@@ -88,7 +88,7 @@ export default function OnboardingPage() {
     }
   }
 
-  const step1Valid = !!data.age && !!data.weight && !!data.height
+  const step1Valid = !!data.gender && !!data.age && !!data.weight && !!data.height
 
   // Full-screen loading overlay while finishing
   if (loading) {
@@ -189,6 +189,40 @@ export default function OnboardingPage() {
                   Tell us about yourself
                 </h2>
                 <p style={{ color: "#6B7280" }}>This helps us calculate your perfect calorie target</p>
+              </div>
+
+              {/* Gender */}
+              <div>
+                <p className="text-sm font-medium mb-3 text-center" style={{ color: "#6B7280" }}>
+                  Biological sex <span style={{ color: "#9CA3AF" }}>— for accurate calorie calculation</span>
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { value: "male",   label: "Male",   emoji: "♂" },
+                    { value: "female", label: "Female", emoji: "♀" },
+                  ].map(opt => {
+                    const selected = data.gender === opt.value
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => updateData({ gender: opt.value })}
+                        className="p-4 rounded-2xl border-2 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                        style={{
+                          borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                          backgroundColor: selected ? "#F0F7F7" : "white",
+                          transform: selected ? "scale(1.02)" : "scale(1)",
+                        }}
+                      >
+                        <span className="text-xl">{opt.emoji}</span>
+                        <span className="font-semibold" style={{ color: selected ? "#2D5F5D" : "#2C3E50" }}>
+                          {opt.label}
+                        </span>
+                        {selected && <Check size={16} style={{ color: "#2D5F5D" }} />}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">

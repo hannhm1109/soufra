@@ -7,7 +7,7 @@ import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
   ShoppingCart, TrendingUp, ChevronRight,
-  Sunrise, Sun, Moon, Zap, BarChart2
+  Sunrise, Sun, Moon, Zap, BarChart2, AlertCircle
 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -133,6 +133,38 @@ export default async function DashboardPage() {
         </div>
         <GenerateButton ratingCount={ratingCount} />
       </div>
+
+      {/* ── Profile completeness nudge ─────────────────────────── */}
+      {(!user.gender || !user.age || !user.weight || !user.height) && (
+        <Link
+          href="/settings"
+          className="fade-in-up flex items-center gap-3 rounded-2xl p-4 mb-6 transition-all hover:shadow-md"
+          style={{
+            backgroundColor: "#FFFBEB",
+            border: "1px solid #FDE68A",
+            animationDelay: "30ms",
+          }}
+        >
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "#F59E0B" }}>
+            <AlertCircle size={16} color="white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
+              Complete your profile for better meal plans
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
+              Missing: {[
+                !user.gender && "biological sex",
+                !user.age && "age",
+                !user.weight && "weight",
+                !user.height && "height",
+              ].filter(Boolean).join(", ")} → affects your calorie target accuracy
+            </p>
+          </div>
+          <ChevronRight size={16} style={{ color: "#B45309" }} className="flex-shrink-0" />
+        </Link>
+      )}
 
       {/* ── Stat cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 mb-8">

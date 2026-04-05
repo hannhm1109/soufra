@@ -1,6 +1,7 @@
 import { create } from "zustand"
 
 interface OnboardingData {
+  gender: string
   age: string
   weight: string
   height: string
@@ -22,6 +23,7 @@ interface OnboardingStore {
 export const useOnboardingStore = create<OnboardingStore>((set) => ({
   step: 1,
   data: {
+    gender: "",
     age: "",
     weight: "",
     height: "",
@@ -38,6 +40,7 @@ export const useOnboardingStore = create<OnboardingStore>((set) => ({
     set({
       step: 1,
       data: {
+        gender: "",
         age: "",
         weight: "",
         height: "",

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import Link from "next/link"
 import HistoryPlanCard from "@/components/history-plan-card"
+import NutritionTrendChart from "@/components/nutrition-trend-chart"
 
 export default async function HistoryPage() {
   const session = await auth()
@@ -40,6 +41,23 @@ export default async function HistoryPage() {
 
       {mealPlans.length > 0 ? (
         <div className="space-y-6">
+          <NutritionTrendChart
+            plans={[...mealPlans].reverse().map((plan, index) => {
+              const slots = plan.slots
+              const avgDailyCalories = Math.round(slots.reduce((s, sl) => s + sl.recipe.calories, 0) / 7)
+              const n = slots.length || 1
+              return {
+                planNumber: index + 1,
+                isActive: plan.isActive,
+                avgDailyCalories,
+                avgProtein: Math.round(slots.reduce((s, sl) => s + sl.recipe.protein, 0) / n),
+                avgCarbs:   Math.round(slots.reduce((s, sl) => s + sl.recipe.carbs,   0) / n),
+                avgFats:    Math.round(slots.reduce((s, sl) => s + sl.recipe.fats,    0) / n),
+                createdAt:  plan.createdAt.toISOString(),
+              }
+            })}
+          />
+
           {mealPlans.map((plan, index) => (
             <HistoryPlanCard
               key={plan.id}
