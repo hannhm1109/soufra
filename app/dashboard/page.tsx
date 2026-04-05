@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import GenerateButton from "@/components/generate-button"
 import MealCard from "@/components/meal-card"
+import MobileMealPlanView from "@/components/mobile-meal-plan"
 import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
@@ -360,7 +361,23 @@ export default async function DashboardPage() {
         </div>
 
         {activePlan ? (
-          <div className="overflow-x-auto">
+          <>
+            {/* Mobile: day-selector view */}
+            <div className="lg:hidden">
+              <MobileMealPlanView
+                slots={activePlan.slots.map(s => ({
+                  id: s.id,
+                  dayOfWeek: s.dayOfWeek,
+                  mealType: s.mealType,
+                  recipe: s.recipe,
+                }))}
+                todayIndex={todayIndex}
+                days={days}
+              />
+            </div>
+
+            {/* Desktop: full week table */}
+            <div className="hidden lg:block overflow-x-auto">
             <table className="w-full border-separate border-spacing-x-1">
               <thead>
                 <tr>
@@ -417,7 +434,8 @@ export default async function DashboardPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         ) : (
           <div className="text-center py-16">
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4"

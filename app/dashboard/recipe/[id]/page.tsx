@@ -1,8 +1,8 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Clock, Flame, ChefHat, ArrowLeft, Users, Sparkles } from "lucide-react"
-import Link from "next/link"
+import { Clock, Flame, ChefHat, Users, Sparkles } from "lucide-react"
+import BackButton from "@/components/back-button"
 import FeedbackButtons from "@/components/feedback-buttons"
 import IngredientsChecklist from "@/components/ingredients-checklist"
 import InstructionsSteps from "@/components/instructions-steps"
@@ -96,13 +96,7 @@ export default async function RecipePage({ params }: { params: Promise<{ id: str
     <div className="max-w-2xl mx-auto">
 
       {/* Back */}
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-2 mb-6 text-sm font-medium transition-opacity hover:opacity-70"
-        style={{ color: "#2D5F5D" }}>
-        <ArrowLeft size={16} />
-        Back to dashboard
-      </Link>
+      <BackButton />
 
       {/* Hero */}
       <div className="rounded-2xl p-8 mb-5" style={{ backgroundColor: "#2D5F5D" }}>

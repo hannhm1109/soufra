@@ -1,8 +1,27 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Sparkles, Loader2, Brain, AlertCircle, ThumbsUp, ChefHat, Zap } from "lucide-react"
+import { Sparkles, Loader2, Brain, AlertCircle, ThumbsUp, ChefHat, Zap, Clock } from "lucide-react"
 import { toast } from "sonner"
+
+const LS_KEY = "soufra_last_generated"
+
+function useLastGenerated() {
+  const [hoursAgo, setHoursAgo] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null
+    const ts = localStorage.getItem(LS_KEY)
+    if (!ts) return null
+    const diff = (Date.now() - parseInt(ts)) / 3600000
+    return diff < 24 ? Math.floor(diff) : null
+  })
+
+  const stamp = () => {
+    localStorage.setItem(LS_KEY, String(Date.now()))
+    setHoursAgo(0)
+  }
+
+  return { hoursAgo, stamp }
+}
 
 interface Insights {
   totalRatings:        number
@@ -18,6 +37,7 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
   const [loading,  setLoading]  = useState(false)
   const [insights, setInsights] = useState<Insights | null>(null)
   const [error,    setError]    = useState("")
+  const { hoursAgo, stamp } = useLastGenerated()
 
   const handleGenerate = async () => {
     setLoading(true)
@@ -29,6 +49,7 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
       const data = await res.json()
 
       if (res.ok) {
+        stamp()
         if (data.adapted && data.insights) {
           setInsights(data.insights)
           toast.success("Plan personalised from your taste profile!", { duration: 4000 })
@@ -79,6 +100,17 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
           )}
         </button>
       </div>
+
+      {/* Cooldown hint */}
+      {hoursAgo !== null && !loading && !error && (
+        <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
+          style={{ backgroundColor: "#F0F7F7", color: "#6B7280" }}>
+          <Clock size={11} style={{ color: "#9CA3AF" }} />
+          {hoursAgo === 0
+            ? "Just generated — replacing will lose your current plan"
+            : `Last generated ${hoursAgo}h ago`}
+        </div>
+      )}
 
       {/* Error */}
       {error && !loading && (
