@@ -32,6 +32,8 @@ export default async function SettingsPage() {
         age: user.age?.toString() || "",
         weight: user.weight?.toString() || "",
         height: user.height?.toString() || "",
+        city: user.city || "Casablanca",
+        marketTier: user.marketTier || "supermarket",
         fitnessGoal: user.fitnessGoal || "",
         activityLevel: user.activityLevel || "",
         cuisines: user.cuisines || [],

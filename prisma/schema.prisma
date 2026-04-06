@@ -20,6 +20,8 @@ model User {
   activityLevel String?
   calorieTarget Int?
   gender        String?
+  city          String?
+  marketTier    MarketTier?
   allergies     String[]
   cuisines      String[]
   weeklyBudget  Float?
@@ -29,6 +31,7 @@ model User {
   mealPlans          MealPlan[]
   feedback      RecipeFeedback[]
   groceryLists  GroceryList[]
+  receipts      Receipt[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -85,31 +88,45 @@ model MealPlanSlot {
 }
 
 model GroceryList {
-  id        String        @id @default(cuid())
-  userId    String
-  weekOf    DateTime
-  totalCost Float?
-  purchased Boolean       @default(false)
-  items     GroceryItem[]
-  user      User          @relation(fields: [userId], references: [id])
-  createdAt DateTime      @default(now())
+  id                String        @id @default(cuid())
+  userId            String
+  weekOf            DateTime
+  totalCost         Float?
+  purchased         Boolean       @default(false)
+  city              String?
+  marketTier        MarketTier?
+  priceConfidence   Float?
+  budgetStatus      String?
+  budgetFloor       Float?
+  budgetCeiling     Float?
+  estimateSummary   Json?
+  items             GroceryItem[]
+  user              User          @relation(fields: [userId], references: [id])
+  createdAt         DateTime      @default(now())
   @@index([userId, weekOf])
 }
 
 model GroceryItem {
-  id               String      @id @default(cuid())
+  id               String          @id @default(cuid())
   groceryListId    String
+  ingredientId     String?
   name             String
   quantity         String
   category         String
   price            Float?
+  unitPrice        Float?
+  priceSource      PriceSourceType?
+  priceConfidence  Float?
+  estimatedTier    MarketTier?
   store            String?
   alternativePrice Float?
   alternativeStore String?
-  checked          Boolean     @default(false)
-  groceryList      GroceryList @relation(fields: [groceryListId], references: [id])
-  createdAt        DateTime    @default(now())
+  checked          Boolean         @default(false)
+  ingredient       Ingredient?     @relation(fields: [ingredientId], references: [id])
+  groceryList      GroceryList     @relation(fields: [groceryListId], references: [id])
+  createdAt        DateTime        @default(now())
   @@index([groceryListId])
+  @@index([ingredientId])
 }
 
 model RecipeFeedback {
@@ -122,4 +139,124 @@ model RecipeFeedback {
   createdAt DateTime @default(now())
   @@unique([userId, recipeId])
   @@index([userId, createdAt])
+}
+
+model Ingredient {
+  id                String                    @id @default(cuid())
+  slug              String                    @unique
+  name              String
+  category          String
+  defaultUnit       String
+  caloriesPer100g   Float?
+  proteinPer100g    Float?
+  carbsPer100g      Float?
+  fatsPer100g       Float?
+  isSeasonal        Boolean                   @default(false)
+  aliases           IngredientAlias[]
+  pricePoints       PricePoint[]
+  priceSnapshots    IngredientPriceSnapshot[]
+  groceryItems      GroceryItem[]
+  receiptItems      ReceiptItem[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+}
+
+model IngredientAlias {
+  id            String      @id @default(cuid())
+  ingredientId  String
+  alias         String
+  ingredient    Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([ingredientId, alias])
+  @@index([alias])
+}
+
+model PricePoint {
+  id            String          @id @default(cuid())
+  ingredientId  String
+  sourceType    PriceSourceType
+  sourceName    String
+  sourceUrl     String?
+  city          String?
+  tier          MarketTier
+  unit          String
+  priceMad      Float
+  confidence    Float
+  capturedAt    DateTime
+  validUntil    DateTime?
+  isPromo       Boolean         @default(false)
+  notes         String?
+  ingredient    Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([ingredientId, capturedAt])
+  @@index([city, tier, capturedAt])
+}
+
+model IngredientPriceSnapshot {
+  id                String      @id @default(cuid())
+  ingredientId      String
+  city              String?
+  tier              MarketTier
+  referencePriceMad Float
+  lowPriceMad       Float?
+  highPriceMad      Float?
+  confidence        Float
+  basedOnPoints     Int
+  computedAt        DateTime    @default(now())
+  ingredient        Ingredient  @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([ingredientId, city, tier, computedAt])
+}
+
+model Receipt {
+  id           String         @id @default(cuid())
+  userId       String
+  storeName    String?
+  city         String?
+  totalMad     Float?
+  purchasedAt  DateTime?
+  imageUrl     String?
+  rawText      String?
+  status       ReceiptStatus  @default(processing)
+  items        ReceiptItem[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ReceiptItem {
+  id             String       @id @default(cuid())
+  receiptId      String
+  ingredientId   String?
+  rawName        String
+  normalizedName String?
+  quantityText   String?
+  unit           String?
+  priceMad       Float?
+  confidence     Float?
+  receipt        Receipt      @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  ingredient     Ingredient?  @relation(fields: [ingredientId], references: [id])
+
+  @@index([receiptId])
+  @@index([ingredientId])
+}
+
+enum MarketTier {
+  souk
+  supermarket
+  premium
+}
+
+enum PriceSourceType {
+  curated
+  scrape
+  receipt
+  admin
+}
+
+enum ReceiptStatus {
+  processing
+  reviewed
+  failed
 }

@@ -1,0 +1,471 @@
+[
+  {
+    "slug": "chicken-breast",
+    "name": "Chicken breast",
+    "category": "Meat & Protein",
+    "defaultUnit": "kg",
+    "aliases": ["chicken", "chicken breast", "chicken breasts", "poulet", "blanc de poulet"],
+    "tierPrices": { "souk": 52, "supermarket": 60, "premium": 68 },
+    "caloriesPer100g": 165,
+    "proteinPer100g": 31,
+    "carbsPer100g": 0,
+    "fatsPer100g": 3.6
+  },
+  {
+    "slug": "beef",
+    "name": "Beef",
+    "category": "Meat & Protein",
+    "defaultUnit": "kg",
+    "aliases": ["beef", "ground beef", "minced beef", "viande hachee", "boeuf"],
+    "tierPrices": { "souk": 90, "supermarket": 105, "premium": 120 },
+    "caloriesPer100g": 250,
+    "proteinPer100g": 26,
+    "carbsPer100g": 0,
+    "fatsPer100g": 15
+  },
+  {
+    "slug": "lamb",
+    "name": "Lamb",
+    "category": "Meat & Protein",
+    "defaultUnit": "kg",
+    "aliases": ["lamb", "agneau"],
+    "tierPrices": { "souk": 105, "supermarket": 118, "premium": 135 }
+  },
+  {
+    "slug": "sardines",
+    "name": "Sardines",
+    "category": "Meat & Protein",
+    "defaultUnit": "kg",
+    "aliases": ["sardines", "sardine", "fresh sardines"],
+    "tierPrices": { "souk": 20, "supermarket": 27, "premium": 34 }
+  },
+  {
+    "slug": "white-fish",
+    "name": "White fish",
+    "category": "Meat & Protein",
+    "defaultUnit": "kg",
+    "aliases": ["fish", "white fish", "merlan", "filet de poisson"],
+    "tierPrices": { "souk": 58, "supermarket": 66, "premium": 78 }
+  },
+  {
+    "slug": "tuna-can",
+    "name": "Tuna can",
+    "category": "Meat & Protein",
+    "defaultUnit": "can",
+    "aliases": ["tuna", "tuna can", "canned tuna", "thon"],
+    "tierPrices": { "souk": 15, "supermarket": 18, "premium": 22 }
+  },
+  {
+    "slug": "eggs",
+    "name": "Eggs",
+    "category": "Meat & Protein",
+    "defaultUnit": "dozen",
+    "aliases": ["egg", "eggs", "oeufs"],
+    "tierPrices": { "souk": 16, "supermarket": 18, "premium": 22 },
+    "caloriesPer100g": 143,
+    "proteinPer100g": 13,
+    "carbsPer100g": 1.1,
+    "fatsPer100g": 10
+  },
+  {
+    "slug": "lentils",
+    "name": "Lentils",
+    "category": "Pantry & Spices",
+    "defaultUnit": "kg",
+    "aliases": ["lentils", "lentil", "lentilles", "adas"],
+    "tierPrices": { "souk": 20, "supermarket": 24, "premium": 30 },
+    "caloriesPer100g": 353,
+    "proteinPer100g": 25,
+    "carbsPer100g": 60,
+    "fatsPer100g": 1.1
+  },
+  {
+    "slug": "chickpeas",
+    "name": "Chickpeas",
+    "category": "Pantry & Spices",
+    "defaultUnit": "kg",
+    "aliases": ["chickpeas", "chickpea", "pois chiches", "hummus chickpeas"],
+    "tierPrices": { "souk": 18, "supermarket": 23, "premium": 28 },
+    "caloriesPer100g": 364,
+    "proteinPer100g": 19,
+    "carbsPer100g": 61,
+    "fatsPer100g": 6
+  },
+  {
+    "slug": "white-beans",
+    "name": "White beans",
+    "category": "Pantry & Spices",
+    "defaultUnit": "kg",
+    "aliases": ["white beans", "beans", "haricots blancs", "loubia"],
+    "tierPrices": { "souk": 18, "supermarket": 22, "premium": 27 }
+  },
+  {
+    "slug": "rice",
+    "name": "Rice",
+    "category": "Grains",
+    "defaultUnit": "kg",
+    "aliases": ["rice", "riz", "basmati rice"],
+    "tierPrices": { "souk": 17, "supermarket": 21, "premium": 27 },
+    "caloriesPer100g": 365,
+    "proteinPer100g": 7.1,
+    "carbsPer100g": 80,
+    "fatsPer100g": 0.7
+  },
+  {
+    "slug": "couscous",
+    "name": "Couscous",
+    "category": "Grains",
+    "defaultUnit": "kg",
+    "aliases": ["couscous", "semolina couscous"],
+    "tierPrices": { "souk": 15, "supermarket": 19, "premium": 24 }
+  },
+  {
+    "slug": "pasta",
+    "name": "Pasta",
+    "category": "Grains",
+    "defaultUnit": "kg",
+    "aliases": ["pasta", "macaroni", "spaghetti", "penne"],
+    "tierPrices": { "souk": 14, "supermarket": 18, "premium": 24 }
+  },
+  {
+    "slug": "oats",
+    "name": "Oats",
+    "category": "Grains",
+    "defaultUnit": "kg",
+    "aliases": ["oats", "rolled oats", "flocons d avoine"],
+    "tierPrices": { "souk": 24, "supermarket": 30, "premium": 38 }
+  },
+  {
+    "slug": "flour",
+    "name": "Flour",
+    "category": "Grains",
+    "defaultUnit": "kg",
+    "aliases": ["flour", "white flour", "farine"],
+    "tierPrices": { "souk": 8, "supermarket": 10, "premium": 13 }
+  },
+  {
+    "slug": "bread",
+    "name": "Bread",
+    "category": "Grains",
+    "defaultUnit": "loaf",
+    "aliases": ["bread", "khobz", "loaf", "batbout", "whole wheat bread"],
+    "tierPrices": { "souk": 2.5, "supermarket": 4, "premium": 7 }
+  },
+  {
+    "slug": "msemen",
+    "name": "Msemen",
+    "category": "Grains",
+    "defaultUnit": "pc",
+    "aliases": ["msemen", "msmen", "rghaif"],
+    "tierPrices": { "souk": 2.5, "supermarket": 3.5, "premium": 5.5 }
+  },
+  {
+    "slug": "milk",
+    "name": "Milk",
+    "category": "Dairy",
+    "defaultUnit": "l",
+    "aliases": ["milk", "whole milk", "semi skimmed milk", "lait"],
+    "tierPrices": { "souk": 8, "supermarket": 9, "premium": 12 }
+  },
+  {
+    "slug": "yogurt",
+    "name": "Yogurt",
+    "category": "Dairy",
+    "defaultUnit": "pot",
+    "aliases": ["yogurt", "yoghurt", "plain yogurt", "greek yogurt", "yaourt"],
+    "tierPrices": { "souk": 4, "supermarket": 5, "premium": 7 }
+  },
+  {
+    "slug": "jben",
+    "name": "Fresh cheese",
+    "category": "Dairy",
+    "defaultUnit": "kg",
+    "aliases": ["jben", "fresh cheese", "goat cheese", "fromage frais"],
+    "tierPrices": { "souk": 45, "supermarket": 58, "premium": 72 }
+  },
+  {
+    "slug": "cheese",
+    "name": "Cheese",
+    "category": "Dairy",
+    "defaultUnit": "kg",
+    "aliases": ["cheese", "grated cheese", "mozzarella", "emmental"],
+    "tierPrices": { "souk": 55, "supermarket": 68, "premium": 82 }
+  },
+  {
+    "slug": "butter",
+    "name": "Butter",
+    "category": "Dairy",
+    "defaultUnit": "250g",
+    "aliases": ["butter", "beurre"],
+    "tierPrices": { "souk": 16, "supermarket": 19, "premium": 24 }
+  },
+  {
+    "slug": "olive-oil",
+    "name": "Olive oil",
+    "category": "Pantry & Spices",
+    "defaultUnit": "l",
+    "aliases": ["olive oil", "huile d olive"],
+    "tierPrices": { "souk": 74, "supermarket": 88, "premium": 110 }
+  },
+  {
+    "slug": "vegetable-oil",
+    "name": "Vegetable oil",
+    "category": "Pantry & Spices",
+    "defaultUnit": "l",
+    "aliases": ["vegetable oil", "sunflower oil", "huile"],
+    "tierPrices": { "souk": 18, "supermarket": 22, "premium": 28 }
+  },
+  {
+    "slug": "tomatoes",
+    "name": "Tomatoes",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["tomato", "tomatoes", "fresh tomatoes", "cherry tomatoes"],
+    "tierPrices": { "souk": 8, "supermarket": 12, "premium": 18 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "onions",
+    "name": "Onions",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["onion", "onions", "red onion", "white onion"],
+    "tierPrices": { "souk": 6, "supermarket": 8, "premium": 11 }
+  },
+  {
+    "slug": "potatoes",
+    "name": "Potatoes",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["potato", "potatoes"],
+    "tierPrices": { "souk": 5, "supermarket": 7, "premium": 10 }
+  },
+  {
+    "slug": "carrots",
+    "name": "Carrots",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["carrot", "carrots"],
+    "tierPrices": { "souk": 6, "supermarket": 8, "premium": 11 }
+  },
+  {
+    "slug": "zucchini",
+    "name": "Zucchini",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["zucchini", "courgette", "courgettes"],
+    "tierPrices": { "souk": 8, "supermarket": 10, "premium": 14 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "eggplant",
+    "name": "Eggplant",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["eggplant", "aubergine", "eggplants"],
+    "tierPrices": { "souk": 8, "supermarket": 10, "premium": 14 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "bell-peppers",
+    "name": "Bell peppers",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["pepper", "peppers", "bell pepper", "bell peppers", "poivron"],
+    "tierPrices": { "souk": 12, "supermarket": 15, "premium": 20 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "spinach",
+    "name": "Spinach",
+    "category": "Vegetables",
+    "defaultUnit": "bunch",
+    "aliases": ["spinach", "epinards"],
+    "tierPrices": { "souk": 5, "supermarket": 7, "premium": 10 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "lettuce",
+    "name": "Lettuce",
+    "category": "Vegetables",
+    "defaultUnit": "pc",
+    "aliases": ["lettuce", "romaine", "salad", "salade"],
+    "tierPrices": { "souk": 4, "supermarket": 6, "premium": 9 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "cucumber",
+    "name": "Cucumber",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["cucumber", "cucumbers", "concombre"],
+    "tierPrices": { "souk": 7, "supermarket": 9, "premium": 13 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "garlic",
+    "name": "Garlic",
+    "category": "Vegetables",
+    "defaultUnit": "kg",
+    "aliases": ["garlic", "garlic clove", "garlic cloves", "ail"],
+    "tierPrices": { "souk": 24, "supermarket": 32, "premium": 40 }
+  },
+  {
+    "slug": "lemons",
+    "name": "Lemons",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["lemon", "lemons", "citron"],
+    "tierPrices": { "souk": 9, "supermarket": 12, "premium": 16 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "bananas",
+    "name": "Bananas",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["banana", "bananas"],
+    "tierPrices": { "souk": 12, "supermarket": 15, "premium": 19 }
+  },
+  {
+    "slug": "apples",
+    "name": "Apples",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["apple", "apples"],
+    "tierPrices": { "souk": 16, "supermarket": 20, "premium": 26 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "oranges",
+    "name": "Oranges",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["orange", "oranges"],
+    "tierPrices": { "souk": 8, "supermarket": 11, "premium": 15 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "dates",
+    "name": "Dates",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["dates", "date", "dattes"],
+    "tierPrices": { "souk": 32, "supermarket": 40, "premium": 56 }
+  },
+  {
+    "slug": "olives",
+    "name": "Olives",
+    "category": "Fruits",
+    "defaultUnit": "kg",
+    "aliases": ["olive", "olives"],
+    "tierPrices": { "souk": 24, "supermarket": 30, "premium": 38 }
+  },
+  {
+    "slug": "tomato-paste",
+    "name": "Tomato paste",
+    "category": "Pantry & Spices",
+    "defaultUnit": "can",
+    "aliases": ["tomato paste", "concentre de tomate"],
+    "tierPrices": { "souk": 5, "supermarket": 6.5, "premium": 8.5 }
+  },
+  {
+    "slug": "harissa",
+    "name": "Harissa",
+    "category": "Pantry & Spices",
+    "defaultUnit": "jar",
+    "aliases": ["harissa", "harissa paste"],
+    "tierPrices": { "souk": 11, "supermarket": 14, "premium": 18 }
+  },
+  {
+    "slug": "ras-el-hanout",
+    "name": "Ras el hanout",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["ras el hanout", "ras hanout"],
+    "tierPrices": { "souk": 8, "supermarket": 11, "premium": 15 }
+  },
+  {
+    "slug": "cumin",
+    "name": "Cumin",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["cumin", "ground cumin", "kamoun"],
+    "tierPrices": { "souk": 6, "supermarket": 8, "premium": 11 }
+  },
+  {
+    "slug": "paprika",
+    "name": "Paprika",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["paprika", "sweet paprika"],
+    "tierPrices": { "souk": 6, "supermarket": 8, "premium": 11 }
+  },
+  {
+    "slug": "black-pepper",
+    "name": "Black pepper",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["black pepper", "pepper", "poivre noir"],
+    "tierPrices": { "souk": 7, "supermarket": 9, "premium": 13 }
+  },
+  {
+    "slug": "cinnamon",
+    "name": "Cinnamon",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["cinnamon", "ground cinnamon", "cannelle"],
+    "tierPrices": { "souk": 7, "supermarket": 9, "premium": 13 }
+  },
+  {
+    "slug": "ginger",
+    "name": "Ginger",
+    "category": "Pantry & Spices",
+    "defaultUnit": "bag",
+    "aliases": ["ginger", "ground ginger", "gingembre"],
+    "tierPrices": { "souk": 7, "supermarket": 9, "premium": 13 }
+  },
+  {
+    "slug": "parsley",
+    "name": "Parsley",
+    "category": "Vegetables",
+    "defaultUnit": "bunch",
+    "aliases": ["parsley", "persil"],
+    "tierPrices": { "souk": 2, "supermarket": 3.5, "premium": 5 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "cilantro",
+    "name": "Cilantro",
+    "category": "Vegetables",
+    "defaultUnit": "bunch",
+    "aliases": ["cilantro", "coriander", "fresh coriander", "coriandre"],
+    "tierPrices": { "souk": 2, "supermarket": 3.5, "premium": 5 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "mint",
+    "name": "Mint",
+    "category": "Vegetables",
+    "defaultUnit": "bunch",
+    "aliases": ["mint", "menthe", "fresh mint"],
+    "tierPrices": { "souk": 3, "supermarket": 4.5, "premium": 6.5 },
+    "isSeasonal": true
+  },
+  {
+    "slug": "honey",
+    "name": "Honey",
+    "category": "Pantry & Spices",
+    "defaultUnit": "jar",
+    "aliases": ["honey", "miel"],
+    "tierPrices": { "souk": 35, "supermarket": 45, "premium": 62 }
+  },
+  {
+    "slug": "preserved-lemons",
+    "name": "Preserved lemons",
+    "category": "Pantry & Spices",
+    "defaultUnit": "jar",
+    "aliases": ["preserved lemons", "preserved lemon", "citron confit"],
+    "tierPrices": { "souk": 14, "supermarket": 18, "premium": 24 }
+  }
+]

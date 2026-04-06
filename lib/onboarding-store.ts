@@ -5,6 +5,8 @@ interface OnboardingData {
   age: string
   weight: string
   height: string
+  city: string
+  marketTier: string
   fitnessGoal: string
   activityLevel: string
   cuisines: string[]
@@ -27,6 +29,8 @@ export const useOnboardingStore = create<OnboardingStore>((set) => ({
     age: "",
     weight: "",
     height: "",
+    city: "Casablanca",
+    marketTier: "supermarket",
     fitnessGoal: "",
     activityLevel: "",
     cuisines: [],
@@ -44,6 +48,8 @@ export const useOnboardingStore = create<OnboardingStore>((set) => ({
         age: "",
         weight: "",
         height: "",
+        city: "Casablanca",
+        marketTier: "supermarket",
         fitnessGoal: "",
         activityLevel: "",
         cuisines: [],

@@ -13,7 +13,12 @@ export default function GenerateGroceryButton() {
     try {
       const res = await fetch("/api/grocery/generate", { method: "POST" })
       if (res.ok) {
-        toast.success("Grocery list ready!")
+        const data = await res.json()
+        if (data.assessment?.status === "unrealistic") {
+          toast.warning(data.assessment.message)
+        } else {
+          toast.success("Grocery list ready!")
+        }
         router.refresh()
       } else {
         toast.error("Generate a meal plan first!")

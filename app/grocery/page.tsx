@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { getConfidenceLabel } from "@/lib/pricing"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
@@ -30,6 +31,10 @@ export default async function GroceryPage() {
   if (!user) redirect("/login")
 
   const groceryList = user.groceryLists[0] || null
+  const confidenceLabel = getConfidenceLabel(groceryList?.priceConfidence)
+  const marketTierLabel = groceryList?.marketTier
+    ? groceryList.marketTier.charAt(0).toUpperCase() + groceryList.marketTier.slice(1)
+    : "Supermarket"
 
   // Group items by category
   const grouped: Record<string, typeof groceryList.items> = {}
@@ -74,7 +79,7 @@ export default async function GroceryPage() {
               <ShoppingCart size={22} style={{ color: "#2D5F5D" }} />
             </h1>
             <p style={{ color: "#6B7280" }}>
-              Auto-generated from your weekly meal plan
+              Auto-generated from your weekly meal plan using {marketTierLabel.toLowerCase()} pricing in {groceryList?.city ?? user.city ?? "Casablanca"}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -115,6 +120,48 @@ export default async function GroceryPage() {
                   ? <><AlertTriangle size={14} /> Getting close to your budget</>
                   : <><XCircle size={14} /> Over budget by {(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH</>
                 }
+              </div>
+            </div>
+
+            <div
+              className="rounded-2xl p-6 mb-6"
+              style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Price confidence</p>
+                  <p className="text-lg font-bold" style={{ color: "#2C3E50" }}>{confidenceLabel}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+                    Based on your city, market tier, and Soufra&apos;s Moroccan ingredient baseline.
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Pricing context</p>
+                  <p className="text-lg font-bold" style={{ color: "#2C3E50" }}>{groceryList.city ?? user.city ?? "Casablanca"}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>{marketTierLabel} basket</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Budget realism</p>
+                  <p
+                    className="text-lg font-bold"
+                    style={{
+                      color:
+                        groceryList.budgetStatus === "unrealistic" ? "#B91C1C" :
+                        groceryList.budgetStatus === "tight" ? "#C2410C" :
+                        "#166534",
+                    }}
+                  >
+                    {groceryList.budgetStatus === "unrealistic"
+                      ? "Too tight"
+                      : groceryList.budgetStatus === "tight"
+                      ? "Possible, but tight"
+                      : "Realistic"}
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+                    {typeof groceryList.estimateSummary === "object" && groceryList.estimateSummary && "message" in groceryList.estimateSummary
+                      ? String(groceryList.estimateSummary.message)
+                      : "Soufra compares your weekly budget with a realistic calorie-based grocery floor."}
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -1,42 +1,63 @@
 "use client"
-import { useState, useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  Save, Check, User, Target, UtensilsCrossed,
-  AlertCircle, Flame, Dumbbell, TrendingUp, Leaf,
-  Activity, AlertTriangle,
+  Save,
+  Check,
+  User,
+  Target,
+  UtensilsCrossed,
+  AlertCircle,
+  Flame,
+  Dumbbell,
+  TrendingUp,
+  Leaf,
+  Activity,
+  AlertTriangle,
+  MapPin,
+  Store,
 } from "lucide-react"
 import { toast } from "sonner"
+import { calculateCalories } from "@/lib/nutrition"
+import { assessBudgetFeasibility } from "@/lib/budget-utils"
 
 const cuisineOptions = [
-  { value: "moroccan",       label: "Moroccan",          emoji: "🇲🇦" },
-  { value: "mediterranean",  label: "Mediterranean",      emoji: "🫒" },
-  { value: "healthy",        label: "Healthy Essentials", emoji: "🥗" },
-  { value: "french",         label: "French",             emoji: "🇫🇷" },
-  { value: "middle_eastern", label: "Middle Eastern",     emoji: "🧆" },
+  { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
+  { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
+  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
+  { value: "french", label: "French", emoji: "🇫🇷" },
+  { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
 ]
 
 const allergyOptions = [
-  { value: "gluten",    label: "Gluten",    emoji: "🌾" },
-  { value: "lactose",   label: "Lactose",   emoji: "🥛" },
-  { value: "peanuts",   label: "Peanuts",   emoji: "🥜" },
+  { value: "gluten", label: "Gluten", emoji: "🌾" },
+  { value: "lactose", label: "Lactose", emoji: "🥛" },
+  { value: "peanuts", label: "Peanuts", emoji: "🥜" },
   { value: "shellfish", label: "Shellfish", emoji: "🦐" },
-  { value: "eggs",      label: "Eggs",      emoji: "🥚" },
-  { value: "soy",       label: "Soy",       emoji: "🫘" },
+  { value: "eggs", label: "Eggs", emoji: "🥚" },
+  { value: "soy", label: "Soy", emoji: "🫘" },
 ]
 
 const fitnessGoals = [
-  { value: "lose_weight", label: "Lose Weight",  desc: "Calorie deficit",   icon: Flame,      color: "#E67E22", bg: "#FFF7F0" },
-  { value: "gain_muscle", label: "Gain Muscle",  desc: "High protein",      icon: Dumbbell,   color: "#3498DB", bg: "#EFF6FF" },
-  { value: "maintain",    label: "Stay Healthy", desc: "Balanced nutrition", icon: TrendingUp, color: "#27AE60", bg: "#F0FFF4" },
-  { value: "eat_better",  label: "Eat Better",   desc: "Food quality",       icon: Leaf,       color: "#2D5F5D", bg: "#F0F7F7" },
+  { value: "lose_weight", label: "Lose Weight", desc: "Calorie deficit", icon: Flame, color: "#E67E22", bg: "#FFF7F0" },
+  { value: "gain_muscle", label: "Gain Muscle", desc: "High protein", icon: Dumbbell, color: "#3498DB", bg: "#EFF6FF" },
+  { value: "maintain", label: "Stay Healthy", desc: "Balanced nutrition", icon: TrendingUp, color: "#27AE60", bg: "#F0FFF4" },
+  { value: "eat_better", label: "Eat Better", desc: "Food quality", icon: Leaf, color: "#2D5F5D", bg: "#F0F7F7" },
 ]
 
 const activityLevels = [
-  { value: "sedentary",   label: "Sedentary",   desc: "Little or no exercise" },
-  { value: "light",       label: "Light",        desc: "1–3 days / week"       },
-  { value: "moderate",    label: "Moderate",     desc: "3–5 days / week"       },
-  { value: "very_active", label: "Very Active",  desc: "6–7 days / week"       },
+  { value: "sedentary", label: "Sedentary", desc: "Little or no exercise" },
+  { value: "light", label: "Light", desc: "1-3 days / week" },
+  { value: "moderate", label: "Moderate", desc: "3-5 days / week" },
+  { value: "very_active", label: "Very Active", desc: "6-7 days / week" },
+]
+
+const cityOptions = ["Casablanca", "Rabat", "Marrakech", "Tangier", "Fes", "Agadir"]
+
+const marketTierOptions = [
+  { value: "souk", label: "Souk Saver", desc: "Lowest realistic local market prices" },
+  { value: "supermarket", label: "Supermarket", desc: "Balanced branded + fresh shopping" },
+  { value: "premium", label: "Premium", desc: "Higher-end and convenience-heavy basket" },
 ]
 
 interface UserData {
@@ -45,28 +66,13 @@ interface UserData {
   age: string
   weight: string
   height: string
+  city: string
+  marketTier: string
   fitnessGoal: string
   activityLevel: string
   cuisines: string[]
   allergies: string[]
   weeklyBudget: string
-}
-
-function calcCalories(d: UserData) {
-  const weight = parseFloat(d.weight)
-  const height = parseFloat(d.height)
-  const age    = parseInt(d.age)
-  if (!weight || !height || !age) return null
-
-  const offset = d.gender === "female" ? -161 : 5
-  const bmr = 10 * weight + 6.25 * height - 5 * age + offset
-  const multipliers: Record<string, number> = {
-    sedentary: 1.2, light: 1.375, moderate: 1.55, very_active: 1.725,
-  }
-  let cal = Math.round(bmr * (multipliers[d.activityLevel] || 1.55))
-  if (d.fitnessGoal === "lose_weight") cal -= 500
-  if (d.fitnessGoal === "gain_muscle") cal += 300
-  return Math.min(3500, Math.max(1200, cal))
 }
 
 const INPUT_CLASS =
@@ -87,8 +93,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center gap-3 mb-5">
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: iconBg }}>
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: iconBg }}>
         <Icon size={18} style={{ color: iconColor }} />
       </div>
       <div>
@@ -100,22 +105,32 @@ function SectionHeader({
 }
 
 export default function SettingsForm({ user }: { user: UserData }) {
-  const router    = useRouter()
-  const [data,      setData]      = useState<UserData>(user)
-  const [baseline,  setBaseline]  = useState<UserData>(user)
-  const [loading,   setLoading]   = useState(false)
-  const [saved,     setSaved]     = useState(false)
-  const [error,     setError]     = useState("")
+  const router = useRouter()
+  const [data, setData] = useState<UserData>(user)
+  const [baseline, setBaseline] = useState<UserData>(user)
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
 
   const hasChanges = JSON.stringify(data) !== JSON.stringify(baseline)
-  const previewCal = useMemo(() => calcCalories(data), [data])
+  const previewCal = useMemo(() => calculateCalories(data), [data])
+  const budgetAssessment = useMemo(
+    () =>
+      assessBudgetFeasibility({
+        calorieTarget: previewCal,
+        weeklyBudget: data.weeklyBudget ? Number.parseFloat(data.weeklyBudget) : null,
+        marketTier: (data.marketTier as "souk" | "supermarket" | "premium") || "supermarket",
+        cuisineCount: data.cuisines.length,
+      }),
+    [data, previewCal]
+  )
 
-  const update = (field: string, value: unknown) =>
-    setData(prev => ({ ...prev, [field]: value }))
+  const update = (field: keyof UserData, value: string | string[]) =>
+    setData((prev) => ({ ...prev, [field]: value }))
 
   const toggleArray = (field: "cuisines" | "allergies", value: string) => {
     const updated = data[field].includes(value)
-      ? data[field].filter(v => v !== value)
+      ? data[field].filter((entry) => entry !== value)
       : [...data[field], value]
     update(field, updated)
   }
@@ -130,31 +145,32 @@ export default function SettingsForm({ user }: { user: UserData }) {
         body: JSON.stringify(data),
       })
       if (res.ok) {
-        setBaseline(data)   // reset hasChanges so sticky bar hides
+        setBaseline(data)
         setSaved(true)
         toast.success("Settings saved!")
         router.refresh()
         setTimeout(() => setSaved(false), 2000)
       } else {
         const body = await res.json()
-        const msg = body.error || "Failed to save. Please try again."
-        setError(msg)
-        toast.error(msg)
+        const message = body.error || "Failed to save. Please try again."
+        setError(message)
+        toast.error(message)
       }
     } catch {
       setError("Network error. Please try again.")
       toast.error("Network error. Please try again.")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
     <div className="space-y-5 pb-24">
-
-      {/* ── Personal Info ───────────────────────────────────── */}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <SectionHeader
-          icon={User} iconColor="#2D5F5D" iconBg="#F0F7F7"
+          icon={User}
+          iconColor="#2D5F5D"
+          iconBg="#F0F7F7"
           title="Personal Info"
           desc="Used to calculate your daily calorie target"
         />
@@ -165,25 +181,27 @@ export default function SettingsForm({ user }: { user: UserData }) {
             <input
               type="text"
               value={data.name}
-              onChange={e => update("name", e.target.value)}
+              onChange={(e) => update("name", e.target.value)}
               className={INPUT_CLASS}
               placeholder="Your name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>Biological Sex <span className="font-normal" style={{ color: "#9CA3AF" }}>(for calorie calculation)</span></label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>
+              Biological Sex <span className="font-normal" style={{ color: "#9CA3AF" }}>(for calorie calculation)</span>
+            </label>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { value: "male",   label: "Male"   },
+                { value: "male", label: "Male" },
                 { value: "female", label: "Female" },
-              ].map(opt => {
-                const selected = data.gender === opt.value
+              ].map((option) => {
+                const selected = data.gender === option.value
                 return (
                   <button
-                    key={opt.value}
+                    key={option.value}
                     type="button"
-                    onClick={() => update("gender", opt.value)}
+                    onClick={() => update("gender", option.value)}
                     className="p-3 rounded-xl border-2 text-sm font-medium transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
                     style={{
                       borderColor: selected ? "#2D5F5D" : "#E5E7EB",
@@ -192,7 +210,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
                     }}
                   >
                     {selected && <Check size={13} className="inline mr-1.5" />}
-                    {opt.label}
+                    {option.label}
                   </button>
                 )
               })}
@@ -201,10 +219,10 @@ export default function SettingsForm({ user }: { user: UserData }) {
 
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Age",           field: "age",          unit: "yrs", placeholder: "25"  },
-              { label: "Weight",        field: "weight",       unit: "kg",  placeholder: "65"  },
-              { label: "Height",        field: "height",       unit: "cm",  placeholder: "170" },
-              { label: "Weekly Budget", field: "weeklyBudget", unit: "DH",  placeholder: "300" },
+              { label: "Age", field: "age", unit: "yrs", placeholder: "25" },
+              { label: "Weight", field: "weight", unit: "kg", placeholder: "65" },
+              { label: "Height", field: "height", unit: "cm", placeholder: "170" },
+              { label: "Weekly Budget", field: "weeklyBudget", unit: "DH", placeholder: "300" },
             ].map(({ label, field, unit, placeholder }) => (
               <div key={field}>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>{label}</label>
@@ -212,7 +230,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
                   <input
                     type="number"
                     value={data[field as keyof UserData] as string}
-                    onChange={e => update(field, e.target.value)}
+                    onChange={(e) => update(field as keyof UserData, e.target.value)}
                     placeholder={placeholder}
                     className={INPUT_CLASS}
                   />
@@ -224,29 +242,110 @@ export default function SettingsForm({ user }: { user: UserData }) {
             ))}
           </div>
 
-          {/* Live calorie preview */}
           {previewCal && (
-            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#F0F7F7" }}>
-              <Activity size={16} style={{ color: "#2D5F5D" }} />
-              <p className="text-sm" style={{ color: "#2D5F5D" }}>
-                Estimated daily target:{" "}
-                <span className="font-bold">{previewCal} kcal</span>
-              </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#F0F7F7" }}>
+                <Activity size={16} style={{ color: "#2D5F5D" }} />
+                <p className="text-sm" style={{ color: "#2D5F5D" }}>
+                  Estimated daily target: <span className="font-bold">{previewCal} kcal</span>
+                </p>
+              </div>
+              <div
+                className="p-3 rounded-xl"
+                style={{
+                  backgroundColor:
+                    budgetAssessment.status === "unrealistic" ? "#FEF2F2" :
+                    budgetAssessment.status === "tight" ? "#FFF7ED" :
+                    "#F0FFF4",
+                }}
+              >
+                <p
+                  className="text-sm font-semibold mb-1"
+                  style={{
+                    color:
+                      budgetAssessment.status === "unrealistic" ? "#B91C1C" :
+                      budgetAssessment.status === "tight" ? "#C2410C" :
+                      "#166534",
+                  }}
+                >
+                  Budget reality check
+                </p>
+                <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+                  {budgetAssessment.message}
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Fitness Goal ────────────────────────────────────── */}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <SectionHeader
-          icon={Target} iconColor="#E67E22" iconBg="#FFF7F0"
+          icon={Store}
+          iconColor="#2D5F5D"
+          iconBg="#F0F7F7"
+          title="Pricing Context"
+          desc="Used to estimate Moroccan grocery costs more realistically"
+        />
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>Primary city</label>
+            <div className="relative">
+              <MapPin size={16} className="absolute left-3 top-3.5" style={{ color: "#9CA3AF" }} />
+              <select
+                value={data.city}
+                onChange={(e) => update("city", e.target.value)}
+                className={`${INPUT_CLASS} pl-10`}
+              >
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {marketTierOptions.map((option) => {
+              const selected = data.marketTier === option.value
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => update("marketTier", option.value)}
+                  className="p-4 rounded-xl border-2 text-left transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
+                  style={{
+                    borderColor: selected ? "#2D5F5D" : "#E5E7EB",
+                    backgroundColor: selected ? "#F0F7F7" : "white",
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-semibold text-sm" style={{ color: "#2C3E50" }}>{option.label}</p>
+                    {selected && <Check size={14} style={{ color: "#2D5F5D" }} />}
+                  </div>
+                  <p className="text-xs" style={{ color: "#9CA3AF" }}>{option.desc}</p>
+                </button>
+              )
+            })}
+          </div>
+
+          <p className="text-xs leading-relaxed" style={{ color: "#9CA3AF" }}>
+            Soufra prices the same weekly plan differently for a souk basket versus a branded supermarket basket, so your budget feels grounded in how you actually shop.
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+        <SectionHeader
+          icon={Target}
+          iconColor="#E67E22"
+          iconBg="#FFF7F0"
           title="Fitness Goal"
           desc="Your goal shapes your calorie and macro targets"
         />
 
         <div className="grid grid-cols-2 gap-3 mb-5">
-          {fitnessGoals.map(goal => {
+          {fitnessGoals.map((goal) => {
             const selected = data.fitnessGoal === goal.value
             const Icon = goal.icon
             return (
@@ -260,8 +359,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
                 }}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: selected ? goal.bg : "#F9FAFB" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: selected ? goal.bg : "#F9FAFB" }}>
                     <Icon size={15} style={{ color: selected ? goal.color : "#9CA3AF" }} />
                   </div>
                   {selected && <Check size={14} style={{ color: goal.color }} />}
@@ -275,7 +373,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
 
         <p className="text-sm font-medium mb-3" style={{ color: "#2C3E50" }}>Activity Level</p>
         <div className="grid grid-cols-2 gap-3">
-          {activityLevels.map(level => {
+          {activityLevels.map((level) => {
             const selected = data.activityLevel === level.value
             return (
               <button
@@ -298,16 +396,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
         </div>
       </div>
 
-      {/* ── Cuisines ────────────────────────────────────────── */}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <SectionHeader
-          icon={UtensilsCrossed} iconColor="#D4A574" iconBg="#FDF6EE"
+          icon={UtensilsCrossed}
+          iconColor="#D4A574"
+          iconBg="#FDF6EE"
           title="Favorite Cuisines"
           desc="The AI will prioritize these in your meal plans"
         />
 
         <div className="grid grid-cols-2 gap-3">
-          {cuisineOptions.map(cuisine => {
+          {cuisineOptions.map((cuisine) => {
             const selected = data.cuisines.includes(cuisine.value)
             return (
               <button
@@ -320,9 +419,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
                 }}
               >
                 <span className="text-lg">{cuisine.emoji}</span>
-                <span className="font-medium text-sm flex-1 text-left" style={{ color: "#2C3E50" }}>
-                  {cuisine.label}
-                </span>
+                <span className="font-medium text-sm flex-1 text-left" style={{ color: "#2C3E50" }}>{cuisine.label}</span>
                 <div
                   className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
@@ -338,16 +435,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
         </div>
       </div>
 
-      {/* ── Allergies ───────────────────────────────────────── */}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <SectionHeader
-          icon={AlertCircle} iconColor="#E67E22" iconBg="#FFF7F0"
+          icon={AlertCircle}
+          iconColor="#E67E22"
+          iconBg="#FFF7F0"
           title="Dietary Restrictions"
           desc="We'll never include these in your meal plans"
         />
 
         <div className="grid grid-cols-2 gap-3 mb-3">
-          {allergyOptions.map(allergy => {
+          {allergyOptions.map((allergy) => {
             const selected = data.allergies.includes(allergy.value)
             return (
               <button
@@ -360,9 +458,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
                 }}
               >
                 <span className="text-lg">{allergy.emoji}</span>
-                <span className="font-medium text-sm flex-1 text-left" style={{ color: "#2C3E50" }}>
-                  {allergy.label}
-                </span>
+                <span className="font-medium text-sm flex-1 text-left" style={{ color: "#2C3E50" }}>{allergy.label}</span>
                 <div
                   className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
@@ -388,8 +484,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
         >
           {data.allergies.length === 0
             ? <span className="flex items-center justify-center gap-2"><Check size={14} /> No restrictions</span>
-            : "None — I eat everything"
-          }
+            : "None - I eat everything"}
         </button>
       </div>
 
@@ -400,7 +495,6 @@ export default function SettingsForm({ user }: { user: UserData }) {
         </div>
       )}
 
-      {/* ── Sticky save bar ─────────────────────────────────── */}
       <div
         className="fixed bottom-0 left-0 right-0 lg:left-64 z-40 transition-all duration-300"
         style={{
@@ -408,10 +502,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
           opacity: hasChanges || saved ? 1 : 0,
         }}
       >
-        <div
-          className="mx-auto max-w-3xl px-4 lg:px-8 py-4"
-          style={{ backgroundColor: "#FDFAF6", borderTop: "1px solid #E5E7EB" }}
-        >
+        <div className="mx-auto max-w-3xl px-4 lg:px-8 py-4" style={{ backgroundColor: "#FDFAF6", borderTop: "1px solid #E5E7EB" }}>
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm" style={{ color: "#6B7280" }}>
               {saved ? "All changes saved" : "You have unsaved changes"}
