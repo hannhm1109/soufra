@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import GenerateButton from "@/components/generate-button"
 import MealCard from "@/components/meal-card"
 import MobileMealPlanView from "@/components/mobile-meal-plan"
+import PrintMealPlanButton from "@/components/print-meal-plan-button"
 import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
@@ -119,7 +120,13 @@ export default async function DashboardPage() {
     ? Math.min(((activeGrocery.totalCost ?? 0) / user.weeklyBudget) * 100, 100)
     : 0
 
+  const printDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric",
+  })
+
   return (
+    <>
+    <div data-no-print>
     <div className="max-w-7xl mx-auto">
 
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -132,7 +139,10 @@ export default async function DashboardPage() {
             Week of {weekRange}
           </p>
         </div>
-        <GenerateButton ratingCount={ratingCount} />
+        <div className="flex items-center gap-3">
+          {activePlan && <PrintMealPlanButton />}
+          <GenerateButton ratingCount={ratingCount} />
+        </div>
       </div>
 
       {/* ── Profile completeness nudge ─────────────────────────── */}
@@ -420,7 +430,7 @@ export default async function DashboardPage() {
                       return (
                         <td key={dayIndex} className="py-1.5 px-0.5">
                           {slot ? (
-                            <MealCard recipe={slot.recipe} slotId={slot.id} />
+                            <MealCard recipe={slot.recipe} slotId={slot.id} mealType={mealType} />
                           ) : (
                             <div
                               className="rounded-xl border-2 border-dashed"
@@ -633,5 +643,106 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+    </div> {/* end data-no-print */}
+
+    {/* ── Print-only meal plan ─────────────────────────────── */}
+    {activePlan && (
+      <div data-print-area style={{ display: "none" }}>
+
+        {/* Banner */}
+        <div className="pdf-banner">
+          <div className="pdf-banner-left">
+            <div className="pdf-logo">S</div>
+            <div>
+              <div className="pdf-app-name">Soufra</div>
+              <div className="pdf-app-sub">Smart Meal Planner</div>
+            </div>
+          </div>
+          <div className="pdf-banner-right">
+            <div className="pdf-list-title">Weekly Meal Plan</div>
+            <div className="pdf-list-date">{printDate}</div>
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="pdf-stats">
+          <div className="pdf-stat">
+            <div className="pdf-stat-value">{activePlan.slots.length}</div>
+            <div className="pdf-stat-label">Meals</div>
+          </div>
+          <div className="pdf-stat-divider" />
+          <div className="pdf-stat">
+            <div className="pdf-stat-value">
+              {Math.round(activePlan.slots.reduce((s, sl) => s + sl.recipe.calories, 0) / 7)} kcal
+            </div>
+            <div className="pdf-stat-label">Avg / Day</div>
+          </div>
+          <div className="pdf-stat-divider" />
+          <div className="pdf-stat">
+            <div className="pdf-stat-value">{user.calorieTarget ?? "—"} kcal</div>
+            <div className="pdf-stat-label">Target</div>
+          </div>
+          {user.weeklyBudget && (
+            <>
+              <div className="pdf-stat-divider" />
+              <div className="pdf-stat">
+                <div className="pdf-stat-value">{user.weeklyBudget} DH</div>
+                <div className="pdf-stat-label">Budget</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 7-day × 3-meal grid */}
+        <div className="pdf-plan-grid">
+          {/* Header row */}
+          <div className="pdf-plan-header-cell" />
+          {days.map((day, i) => (
+            <div
+              key={day}
+              className={`pdf-plan-header-cell${i === todayIndex ? " today" : ""}`}
+            >
+              {day}
+            </div>
+          ))}
+
+          {/* Meal rows */}
+          {(["breakfast", "lunch", "dinner"] as const).map((mt) => (
+            <>
+              <div key={`label-${mt}`} className="pdf-plan-row-label">
+                {mt === "breakfast" ? "🌅" : mt === "lunch" ? "☀️" : "🌙"}<br />{mt}
+              </div>
+              {days.map((_, dayIndex) => {
+                const slot = activePlan.slots.find(
+                  s => s.dayOfWeek === dayIndex && s.mealType === mt
+                )
+                return (
+                  <div key={`${mt}-${dayIndex}`} className="pdf-plan-cell">
+                    {slot ? (
+                      <>
+                        <div className="pdf-plan-cell-name">{slot.recipe.name}</div>
+                        <div className="pdf-plan-cell-meta">
+                          🔥 {slot.recipe.calories} · ⏱ {slot.recipe.prepTime + slot.recipe.cookTime}m
+                        </div>
+                      </>
+                    ) : (
+                      <div className="pdf-plan-cell-empty">–</div>
+                    )}
+                  </div>
+                )
+              })}
+            </>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="pdf-footer">
+          <span>Generated by Soufra — soufra.app</span>
+          <span>{printDate}</span>
+        </div>
+
+      </div>
+    )}
+    </> /* end fragment */
   )
 }

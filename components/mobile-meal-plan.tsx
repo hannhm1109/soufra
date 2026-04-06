@@ -95,7 +95,7 @@ export default function MobileMealPlanView({
               </div>
 
               {slot ? (
-                <MealCard recipe={slot.recipe} slotId={slot.id} />
+                <MealCard recipe={slot.recipe} slotId={slot.id} mealType={slot.mealType} />
               ) : (
                 <div
                   className="rounded-xl border-2 border-dashed flex items-center justify-center py-4"

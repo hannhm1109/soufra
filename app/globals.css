@@ -309,4 +309,80 @@ body {
     font-size: 9px;
     color: #9CA3AF;
   }
+
+  /* ── Meal Plan PDF layout ── */
+  .pdf-plan-grid {
+    display: grid !important;
+    grid-template-columns: 60px repeat(7, 1fr);
+    gap: 0;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .pdf-plan-header-cell {
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+    background-color: #2D5F5D !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border-right: 1px solid rgba(255,255,255,0.15);
+  }
+  .pdf-plan-header-cell:last-child { border-right: none; }
+  .pdf-plan-header-cell.today {
+    background-color: #D4A574 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .pdf-plan-row-label {
+    padding: 6px 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9CA3AF;
+    background-color: #F9FAFB !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border-top: 1px solid #F3F4F6;
+    border-right: 1px solid #E5E7EB;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .pdf-plan-cell {
+    padding: 5px 4px;
+    border-top: 1px solid #F3F4F6;
+    border-right: 1px solid #F3F4F6;
+    vertical-align: top;
+    min-height: 44px;
+  }
+  .pdf-plan-cell:last-child { border-right: none; }
+  .pdf-plan-cell-name {
+    font-size: 9px;
+    font-weight: 600;
+    color: #2C3E50;
+    line-height: 1.3;
+    margin-bottom: 3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .pdf-plan-cell-meta {
+    font-size: 8px;
+    color: #9CA3AF;
+  }
+  .pdf-plan-cell-empty {
+    color: #E5E7EB;
+    font-size: 16px;
+    text-align: center;
+    padding-top: 8px;
+  }
 }

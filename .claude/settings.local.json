@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npm run lint)"
+    ]
+  }
+}

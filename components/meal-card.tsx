@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { RefreshCw, X, Flame, Loader2, Check } from "lucide-react"
+import { RefreshCw, X, Flame, Loader2, Check, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 type Recipe = {
@@ -27,7 +27,15 @@ const cuisineEmoji: Record<string, string> = {
   italian:        "🇮🇹",
 }
 
-export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: string }) {
+export default function MealCard({
+  recipe,
+  slotId,
+  mealType,
+}: {
+  recipe: Recipe
+  slotId: string
+  mealType?: string
+}) {
   const router = useRouter()
   const total  = recipe.protein + recipe.carbs + recipe.fats || 1
 
@@ -35,6 +43,7 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
   const [alternatives, setAlternatives] = useState<Recipe[]>([])
   const [fetching,     setFetching]     = useState(false)
   const [swapping,     setSwapping]     = useState<string | null>(null)
+  const [aiLoading,    setAiLoading]    = useState(false)
 
   const difficultyColor =
     recipe.difficulty === "easy"   ? { bg: "#F0FFF4", text: "#27AE60" } :
@@ -46,9 +55,12 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
     e.stopPropagation()
     setOpen(true)
     setFetching(true)
-    const res = await fetch(
-      `/api/meal-plans/alternatives?cuisine=${recipe.cuisine}&excludeId=${recipe.id}`
-    )
+    const params = new URLSearchParams({
+      cuisine:   recipe.cuisine,
+      excludeId: recipe.id,
+      ...(mealType ? { mealType } : {}),
+    })
+    const res = await fetch(`/api/meal-plans/alternatives?${params}`)
     const data = await res.json()
     setAlternatives(data.recipes ?? [])
     setFetching(false)
@@ -65,6 +77,28 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
     setSwapping(null)
     toast.success("Recipe swapped!")
     router.refresh()
+  }
+
+  const doAIGenerate = async () => {
+    setAiLoading(true)
+    try {
+      const res = await fetch("/api/meal-plans/generate-single", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId }),
+      })
+      if (res.ok) {
+        setOpen(false)
+        toast.success("Fresh meal generated!")
+        router.refresh()
+      } else {
+        toast.error("Couldn't generate a meal. Try again.")
+      }
+    } catch {
+      toast.error("Something went wrong.")
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
@@ -112,7 +146,7 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
         </button>
       </div>
 
-      {/* Swap modal — fixed overlay */}
+      {/* Swap modal */}
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -123,13 +157,11 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
             style={{ backgroundColor: "white", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
             onClick={e => e.stopPropagation()}>
 
-            {/* Modal header */}
+            {/* Header */}
             <div className="flex items-center justify-between p-5 pb-3">
               <div>
                 <h3 className="font-bold" style={{ color: "#2C3E50" }}>Swap Recipe</h3>
-                <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                  {recipe.name}
-                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>{recipe.name}</p>
               </div>
               <button
                 onClick={() => setOpen(false)}
@@ -138,56 +170,81 @@ export default function MealCard({ recipe, slotId }: { recipe: Recipe; slotId: s
               </button>
             </div>
 
-            <div className="px-5 pb-5">
+            <div className="px-5 pb-5 space-y-3">
               {fetching ? (
-                <div className="flex items-center justify-center py-10 gap-2" style={{ color: "#9CA3AF" }}>
+                <div className="flex items-center justify-center py-8 gap-2" style={{ color: "#9CA3AF" }}>
                   <Loader2 size={18} className="animate-spin" />
                   <span className="text-sm">Finding alternatives…</span>
                 </div>
-              ) : alternatives.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm" style={{ color: "#9CA3AF" }}>
-                    No alternatives found for this cuisine yet.
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: "#D1D5DB" }}>
-                    Generate a new meal plan to get more recipes.
-                  </p>
-                </div>
               ) : (
-                <div className="space-y-2">
-                  {alternatives.map(alt => {
-                    const isSwapping = swapping === alt.id
-                    return (
-                      <button
-                        key={alt.id}
-                        onClick={() => doSwap(alt.id)}
-                        disabled={swapping !== null}
-                        className="w-full text-left p-3 rounded-xl transition-all duration-150 flex items-center gap-3"
-                        style={{ backgroundColor: "#F8F9FA" }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#F0F7F7")}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "#F8F9FA")}>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: "#2C3E50" }}>
-                            {alt.name}
-                          </p>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <span className="text-xs flex items-center gap-1" style={{ color: "#E67E22" }}>
-                              <Flame size={10} /> {alt.calories} kcal
-                            </span>
-                            <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                              {alt.prepTime + alt.cookTime}min
-                            </span>
-                          </div>
-                        </div>
-                        {isSwapping ? (
-                          <Loader2 size={14} className="animate-spin flex-shrink-0" style={{ color: "#2D5F5D" }} />
-                        ) : (
-                          <Check size={14} className="flex-shrink-0 opacity-0 group-hover:opacity-100" style={{ color: "#2D5F5D" }} />
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
+                <>
+                  {/* DB alternatives */}
+                  {alternatives.length > 0 && (
+                    <div className="space-y-2">
+                      {alternatives.map(alt => {
+                        const isSwapping = swapping === alt.id
+                        return (
+                          <button
+                            key={alt.id}
+                            onClick={() => doSwap(alt.id)}
+                            disabled={swapping !== null || aiLoading}
+                            className="w-full text-left p-3 rounded-xl transition-all duration-150 flex items-center gap-3"
+                            style={{ backgroundColor: "#F8F9FA" }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "#F0F7F7")}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "#F8F9FA")}>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold truncate" style={{ color: "#2C3E50" }}>
+                                {alt.name}
+                              </p>
+                              <div className="flex items-center gap-3 mt-0.5">
+                                <span className="text-xs flex items-center gap-1" style={{ color: "#E67E22" }}>
+                                  <Flame size={10} /> {alt.calories} kcal
+                                </span>
+                                <span className="text-xs" style={{ color: "#9CA3AF" }}>
+                                  {alt.prepTime + alt.cookTime}min
+                                </span>
+                              </div>
+                            </div>
+                            {isSwapping
+                              ? <Loader2 size={14} className="animate-spin flex-shrink-0" style={{ color: "#2D5F5D" }} />
+                              : <Check size={14} className="flex-shrink-0 opacity-0 group-hover:opacity-100" style={{ color: "#2D5F5D" }} />
+                            }
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Divider when both DB + AI are shown */}
+                  {alternatives.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-px" style={{ backgroundColor: "#F3F4F6" }} />
+                      <span className="text-xs" style={{ color: "#D1D5DB" }}>or</span>
+                      <div className="flex-1 h-px" style={{ backgroundColor: "#F3F4F6" }} />
+                    </div>
+                  )}
+
+                  {/* AI generate button — always shown */}
+                  <button
+                    onClick={doAIGenerate}
+                    disabled={swapping !== null || aiLoading}
+                    className="w-full flex items-center justify-center gap-2 p-3 rounded-xl font-semibold text-sm transition-all duration-150 disabled:opacity-50"
+                    style={{ backgroundColor: "#F0F7F7", color: "#2D5F5D" }}
+                    onMouseEnter={e => { if (!aiLoading) e.currentTarget.style.backgroundColor = "#E8F3F2" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#F0F7F7" }}>
+                    {aiLoading ? (
+                      <><Loader2 size={15} className="animate-spin" /> Generating…</>
+                    ) : (
+                      <><Sparkles size={15} /> Generate a fresh meal with AI</>
+                    )}
+                  </button>
+
+                  {alternatives.length === 0 && !aiLoading && (
+                    <p className="text-center text-xs" style={{ color: "#9CA3AF" }}>
+                      No saved alternatives yet — AI will create one just for you
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
