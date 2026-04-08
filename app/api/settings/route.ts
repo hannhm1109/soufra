@@ -29,6 +29,7 @@ export async function POST(req: Request) {
         cuisines: data.cuisines,
         allergies: data.allergies,
         weeklyBudget: parseFloat(data.weeklyBudget) || null,
+        isRamadan: Boolean(data.isRamadan),
         calorieTarget,
       }
     })

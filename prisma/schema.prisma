@@ -25,6 +25,7 @@ model User {
   allergies     String[]
   cuisines      String[]
   weeklyBudget  Float?
+  isRamadan          Boolean  @default(false)
   learnedPrefs       Json?
   resetToken         String?
   resetTokenExpiry   DateTime?

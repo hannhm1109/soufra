@@ -114,9 +114,11 @@ export async function POST() {
 
   // ── Calorie split per meal ───────────────────────────────
   const target    = user.calorieTarget ?? 2000
-  const breakfast = Math.round(target * 0.25)
-  const lunch     = Math.round(target * 0.40)
-  const dinner    = Math.round(target * 0.35)
+  const isRamadan = user.isRamadan ?? false
+  // Ramadan: Suhoor 30% / Iftar 50% / Post-Iftar 20%
+  const breakfast = Math.round(target * (isRamadan ? 0.30 : 0.25))
+  const lunch     = Math.round(target * (isRamadan ? 0.50 : 0.40))
+  const dinner    = Math.round(target * (isRamadan ? 0.20 : 0.35))
 
   // ── Adaptive learning block ──────────────────────────────
   let adaptiveSection = ""
@@ -147,14 +149,29 @@ export async function POST() {
     ? `\nCROSS-PLAN VARIETY — avoid repeating recipes from previous plans:\n${previousNames.map(n => `• ${n}`).join("\n")}\nGenerate fresh recipes the user hasn't seen before.`
     : ""
 
+  const ramadanSection = isRamadan ? `
+RAMADAN MODE ACTIVE — this plan is for the holy month of Ramadan:
+- "breakfast" slot = SUHOOR (pre-dawn meal eaten before Fajr prayer, ~${breakfast} kcal)
+  → Light but sustaining: oats, eggs, dates, labneh, msemen, whole grains, nuts, fruit
+  → Must keep the person full and energized throughout the fasting day
+- "lunch" slot = IFTAR (break-fast at Maghrib, ~${lunch} kcal)
+  → Start with dates (sunnah), harira soup or chilled beverages, then main course
+  → Traditional Ramadan foods: harira, chebakia, briouat, sellou, msemen, bastilla, couscous, tagine
+  → This is the main meal — hearty, traditional, celebratory
+- "dinner" slot = POST-IFTAR / Isha meal (~${dinner} kcal)
+  → Lighter meal 2-3 hours after Iftar: salads, light soups, light proteins, fruits
+  → Should not be too heavy as people are already full from Iftar
+Include as many traditional Moroccan Ramadan staples as possible (harira, chebakia, sellou, dates, briouat, etc.)
+` : ""
+
   const prompt = `You are a professional nutritionist and chef specializing in Moroccan and Mediterranean cuisines, with deep knowledge of healthy, budget-friendly everyday cooking.
 
 SOUFRA PHILOSOPHY: Moroccan and Mediterranean cuisines share the same warmth, the same ingredients, the same culture of eating together. "Healthy Essentials" means nourishing dishes from common household staples (eggs, oats, chicken, rice, legumes, seasonal vegetables) — not exotic superfoods.
-
+${ramadanSection}
 USER PROFILE:
 - Cuisines: ${user.cuisines.join(", ")}
 - Daily calorie target: ${target} kcal
-- Calorie split: breakfast ~${breakfast} kcal | lunch ~${lunch} kcal | dinner ~${dinner} kcal
+- Calorie split: ${isRamadan ? `Suhoor ~${breakfast} kcal | Iftar ~${lunch} kcal | Post-Iftar ~${dinner} kcal` : `breakfast ~${breakfast} kcal | lunch ~${lunch} kcal | dinner ~${dinner} kcal`}
 - Fitness goal: ${user.fitnessGoal}
 - Allergies: ${user.allergies.length > 0 ? user.allergies.join(", ") : "none"}
 - Weekly budget: ${user.weeklyBudget} DH (Morocco — use ingredients priced in MAD)

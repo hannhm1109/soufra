@@ -16,6 +16,7 @@ import {
   AlertTriangle,
   MapPin,
   Store,
+  Moon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { calculateCalories } from "@/lib/nutrition"
@@ -73,6 +74,7 @@ interface UserData {
   cuisines: string[]
   allergies: string[]
   weeklyBudget: string
+  isRamadan: boolean
 }
 
 const INPUT_CLASS =
@@ -125,7 +127,7 @@ export default function SettingsForm({ user }: { user: UserData }) {
     [data, previewCal]
   )
 
-  const update = (field: keyof UserData, value: string | string[]) =>
+  const update = (field: keyof UserData, value: string | string[] | boolean) =>
     setData((prev) => ({ ...prev, [field]: value }))
 
   const toggleArray = (field: "cuisines" | "allergies", value: string) => {
@@ -486,6 +488,59 @@ export default function SettingsForm({ user }: { user: UserData }) {
             ? <span className="flex items-center justify-center gap-2"><Check size={14} /> No restrictions</span>
             : "None - I eat everything"}
         </button>
+      </div>
+
+      {/* Ramadan Mode */}
+      <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+        <SectionHeader
+          icon={Moon}
+          iconColor="#6366F1"
+          iconBg="#F5F3FF"
+          title="Ramadan Mode"
+          desc="Adapts your meal plan to Suhoor, Iftar, and post-Iftar meals"
+        />
+
+        <button
+          type="button"
+          onClick={() => update("isRamadan", !data.isRamadan)}
+          className="w-full p-4 rounded-xl border-2 flex items-center justify-between transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
+          style={{
+            borderColor: data.isRamadan ? "#6366F1" : "#E5E7EB",
+            backgroundColor: data.isRamadan ? "#F5F3FF" : "white",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🌙</span>
+            <div className="text-left">
+              <p className="font-semibold text-sm" style={{ color: "#2C3E50" }}>
+                {data.isRamadan ? "Ramadan Mode is ON" : "Enable Ramadan Mode"}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                {data.isRamadan
+                  ? "AI will generate Suhoor, Iftar & post-Iftar meals with traditional Ramadan foods"
+                  : "Switch to Suhoor / Iftar / post-Iftar meal structure"}
+              </p>
+            </div>
+          </div>
+          <div
+            className="w-11 h-6 rounded-full relative flex-shrink-0 transition-colors duration-200"
+            style={{ backgroundColor: data.isRamadan ? "#6366F1" : "#D1D5DB" }}
+          >
+            <div
+              className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200"
+              style={{ transform: data.isRamadan ? "translateX(22px)" : "translateX(2px)" }}
+            />
+          </div>
+        </button>
+
+        {data.isRamadan && (
+          <div className="mt-3 p-3 rounded-xl text-xs space-y-1" style={{ backgroundColor: "#F5F3FF", color: "#6366F1" }}>
+            <p className="font-semibold mb-1.5">What changes in your plan:</p>
+            <p>🌅 <strong>Suhoor</strong> — light, sustaining pre-dawn meal (30% of daily calories)</p>
+            <p>🌙 <strong>Iftar</strong> — hearty break-fast with harira, dates & traditional dishes (50%)</p>
+            <p>🍽️ <strong>Post-Iftar</strong> — lighter late dinner (20%)</p>
+          </div>
+        )}
       </div>
 
       {error && (

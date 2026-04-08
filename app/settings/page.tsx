@@ -39,6 +39,7 @@ export default async function SettingsPage() {
         cuisines: user.cuisines || [],
         allergies: user.allergies || [],
         weeklyBudget: user.weeklyBudget?.toString() || "",
+        isRamadan: user.isRamadan ?? false,
       }} />
     </div>
   )

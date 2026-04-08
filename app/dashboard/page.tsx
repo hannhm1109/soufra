@@ -140,6 +140,13 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {user.isRamadan && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: "#F5F3FF", color: "#6366F1" }}>
+              🌙 Ramadan Mode
+            </span>
+          )}
           {activePlan && <PrintMealPlanButton />}
           <GenerateButton ratingCount={ratingCount} />
         </div>
@@ -282,9 +289,9 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {(
               [
-                { key: "breakfast", label: "Breakfast", Icon: Sunrise, color: "#F59E0B", bg: "#FFFBEB" },
-                { key: "lunch",     label: "Lunch",     Icon: Sun,     color: "#E67E22", bg: "#FFF7F0" },
-                { key: "dinner",    label: "Dinner",    Icon: Moon,    color: "#6366F1", bg: "#F5F3FF" },
+                { key: "breakfast", label: user.isRamadan ? "Suhoor" : "Breakfast", Icon: Sunrise, color: "#F59E0B", bg: "#FFFBEB" },
+                { key: "lunch",     label: user.isRamadan ? "Iftar"  : "Lunch",     Icon: Sun,     color: "#E67E22", bg: "#FFF7F0" },
+                { key: "dinner",    label: user.isRamadan ? "Post-Iftar" : "Dinner", Icon: Moon,   color: "#6366F1", bg: "#F5F3FF" },
               ] as const
             ).map(({ key, label, Icon, color, bg }) => {
               const slot = todayMeals[key]
