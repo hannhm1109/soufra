@@ -46,6 +46,8 @@ export async function POST() {
 
   const allIngredients: string[] = []
   for (const slot of activePlan.slots) {
+    // Skip slots that use yesterday's leftovers — ingredients already counted in the dinner that made them
+    if (slot.usesLeftovers) continue
     const ingredients = slot.recipe.ingredients as string[]
     allIngredients.push(...ingredients)
   }

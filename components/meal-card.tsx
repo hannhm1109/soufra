@@ -2,7 +2,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { RefreshCw, X, Flame, Loader2, Check, Sparkles } from "lucide-react"
+import { RefreshCw, X, Flame, Loader2, Check, Sparkles, PackageCheck } from "lucide-react"
 import { toast } from "sonner"
 
 type Recipe = {
@@ -31,19 +31,25 @@ export default function MealCard({
   recipe,
   slotId,
   mealType,
+  hasLeftovers: initialHasLeftovers = false,
+  usesLeftovers = false,
 }: {
   recipe: Recipe
   slotId: string
   mealType?: string
+  hasLeftovers?: boolean
+  usesLeftovers?: boolean
 }) {
   const router = useRouter()
   const total  = recipe.protein + recipe.carbs + recipe.fats || 1
 
-  const [open,         setOpen]         = useState(false)
-  const [alternatives, setAlternatives] = useState<Recipe[]>([])
-  const [fetching,     setFetching]     = useState(false)
-  const [swapping,     setSwapping]     = useState<string | null>(null)
-  const [aiLoading,    setAiLoading]    = useState(false)
+  const [open,           setOpen]           = useState(false)
+  const [alternatives,   setAlternatives]   = useState<Recipe[]>([])
+  const [fetching,       setFetching]       = useState(false)
+  const [swapping,       setSwapping]       = useState<string | null>(null)
+  const [aiLoading,      setAiLoading]      = useState(false)
+  const [hasLeftovers,   setHasLeftovers]   = useState(initialHasLeftovers)
+  const [leftoverSaving, setLeftoverSaving] = useState(false)
 
   const difficultyColor =
     recipe.difficulty === "easy"   ? { bg: "#F0FFF4", text: "#27AE60" } :
@@ -101,6 +107,26 @@ export default function MealCard({
     }
   }
 
+  const toggleLeftovers = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const next = !hasLeftovers
+    setHasLeftovers(next)
+    setLeftoverSaving(true)
+    try {
+      await fetch("/api/meal-plans/slots", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId, hasLeftovers: next }),
+      })
+      router.refresh()
+    } catch {
+      setHasLeftovers(!next) // revert
+    } finally {
+      setLeftoverSaving(false)
+    }
+  }
+
   return (
     <>
       {/* Card */}
@@ -133,8 +159,37 @@ export default function MealCard({
               <div style={{ width: `${(recipe.carbs   / total) * 100}%`, backgroundColor: "#2D5F5D" }} />
               <div style={{ width: `${(recipe.fats    / total) * 100}%`, backgroundColor: "#D4A574" }} />
             </div>
+
+            {/* Leftover badges */}
+            {usesLeftovers && (
+              <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit"
+                style={{ backgroundColor: "#FFF7F0", color: "#E67E22" }}>
+                🥡 Using yesterday&apos;s leftovers
+              </div>
+            )}
+            {hasLeftovers && (
+              <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full w-fit"
+                style={{ backgroundColor: "#F0FFF4", color: "#27AE60" }}>
+                <PackageCheck size={9} /> Leftovers packed
+              </div>
+            )}
           </div>
         </Link>
+
+        {/* Pack leftovers button — only for dinner slots */}
+        {mealType === "dinner" && !usesLeftovers && (
+          <button
+            onClick={toggleLeftovers}
+            title={hasLeftovers ? "Unmark leftovers" : "Pack leftovers for tomorrow's lunch"}
+            className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-70 transition-all duration-150 hover:scale-110 active:scale-95"
+            style={{
+              backgroundColor: hasLeftovers ? "#27AE60" : "#E67E22",
+              color: "white",
+              opacity: leftoverSaving ? 0.6 : undefined,
+            }}>
+            {leftoverSaving ? <Loader2 size={10} className="animate-spin" /> : <PackageCheck size={11} />}
+          </button>
+        )}
 
         {/* Swap button — hover on desktop, always visible on touch devices */}
         <button

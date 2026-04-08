@@ -386,6 +386,8 @@ export default async function DashboardPage() {
                   id: s.id,
                   dayOfWeek: s.dayOfWeek,
                   mealType: s.mealType,
+                  hasLeftovers: s.hasLeftovers,
+                  usesLeftovers: s.usesLeftovers,
                   recipe: s.recipe,
                 }))}
                 todayIndex={todayIndex}
@@ -437,7 +439,13 @@ export default async function DashboardPage() {
                       return (
                         <td key={dayIndex} className="py-1.5 px-0.5">
                           {slot ? (
-                            <MealCard recipe={slot.recipe} slotId={slot.id} mealType={mealType} />
+                            <MealCard
+                              recipe={slot.recipe}
+                              slotId={slot.id}
+                              mealType={mealType}
+                              hasLeftovers={slot.hasLeftovers}
+                              usesLeftovers={slot.usesLeftovers}
+                            />
                           ) : (
                             <div
                               className="rounded-xl border-2 border-dashed"

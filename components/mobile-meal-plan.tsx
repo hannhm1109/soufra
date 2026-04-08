@@ -7,6 +7,8 @@ interface MealSlot {
   id: string
   dayOfWeek: number
   mealType: string
+  hasLeftovers: boolean
+  usesLeftovers: boolean
   recipe: {
     id: string
     name: string
@@ -95,7 +97,13 @@ export default function MobileMealPlanView({
               </div>
 
               {slot ? (
-                <MealCard recipe={slot.recipe} slotId={slot.id} mealType={slot.mealType} />
+                <MealCard
+                  recipe={slot.recipe}
+                  slotId={slot.id}
+                  mealType={slot.mealType}
+                  hasLeftovers={slot.hasLeftovers}
+                  usesLeftovers={slot.usesLeftovers}
+                />
               ) : (
                 <div
                   className="rounded-xl border-2 border-dashed flex items-center justify-center py-4"
