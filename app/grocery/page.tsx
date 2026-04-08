@@ -6,6 +6,7 @@ import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucid
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
 import PrintGroceryButton from "@/components/print-grocery-button"
+import ReceiptUpload from "@/components/receipt-upload"
 
 export const dynamic = "force-dynamic"
 
@@ -82,7 +83,8 @@ export default async function GroceryPage() {
               Auto-generated from your weekly meal plan using {marketTierLabel.toLowerCase()} pricing in {groceryList?.city ?? user.city ?? "Casablanca"}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <ReceiptUpload />
             {groceryList && <PrintGroceryButton />}
             <GenerateGroceryButton />
           </div>
