@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Sparkles } from "lucide-react"
 import Link from "next/link"
-import HistoryPlanCard from "@/components/history-plan-card"
 import NutritionTrendChart from "@/components/nutrition-trend-chart"
+import HistoryList from "@/components/history-list"
 
 export default async function HistoryPage() {
   const session = await auth()
@@ -58,13 +58,7 @@ export default async function HistoryPage() {
             })}
           />
 
-          {mealPlans.map((plan, index) => (
-            <HistoryPlanCard
-              key={plan.id}
-              plan={plan}
-              planNumber={mealPlans.length - index}
-            />
-          ))}
+          <HistoryList plans={mealPlans} />
         </div>
       ) : (
         <div

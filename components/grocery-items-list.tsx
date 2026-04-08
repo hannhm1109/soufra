@@ -1,6 +1,16 @@
 "use client"
 import { useState } from "react"
+import { motion } from "framer-motion"
 import { ChevronDown, ChevronUp, Beef, Leaf, Apple, Milk, Wheat, FlaskConical, ShoppingBasket, Check } from "lucide-react"
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+}
+const cardVariants = {
+  hidden: { opacity: 0, y: 18 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] as [number,number,number,number] } },
+}
 
 interface GroceryItem {
   id: string
@@ -120,7 +130,7 @@ export default function GroceryItemsList({ grouped }: Props) {
       </div>
 
       {/* Category cards */}
-      <div className="space-y-4">
+      <motion.div className="space-y-4" variants={listVariants} initial="hidden" animate="show">
         {Object.entries(grouped).map(([category, items]) => {
           const checkedInCat = items.filter(i => checked[i.id]).length
           const isCollapsed   = collapsed[category] ?? false
@@ -128,8 +138,9 @@ export default function GroceryItemsList({ grouped }: Props) {
           const allDone       = checkedInCat === items.length
 
           return (
-            <div
+            <motion.div
               key={category}
+              variants={cardVariants}
               className="rounded-2xl overflow-hidden"
               style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
 
@@ -246,10 +257,10 @@ export default function GroceryItemsList({ grouped }: Props) {
                   })}
                 </div>
               )}
-            </div>
+            </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </div>
   )
 }

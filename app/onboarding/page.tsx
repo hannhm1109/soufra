@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { useOnboardingStore } from "@/lib/onboarding-store"
 import { calculateCalories } from "@/lib/nutrition"
 import { assessBudgetFeasibility } from "@/lib/budget-utils"
@@ -66,6 +67,14 @@ const marketTierOptions = [
 
 const INPUT_CLASS =
   "w-full px-3 py-3 rounded-xl border border-gray-200 bg-white outline-none text-center text-lg font-semibold transition-colors focus:border-[#2D5F5D] focus:ring-1 focus:ring-[#2D5F5D]"
+
+const EASE: [number, number, number, number] = [0.25, 0.46, 0.45, 0.94]
+
+const stepVariants = {
+  enter: (dir: string) => ({ x: dir === "right" ? 48 : -48, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: string) => ({ x: dir === "right" ? -48 : 48, opacity: 0 }),
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -188,7 +197,17 @@ export default function OnboardingPage() {
       </div>
 
       <div className="flex-1 flex items-center justify-center px-6 overflow-hidden">
-        <div key={step} className={`w-full max-w-lg ${direction === "right" ? "step-enter-right" : "step-enter-left"}`}>
+        <AnimatePresence mode="wait" custom={direction}>
+        <motion.div
+          key={step}
+          custom={direction}
+          variants={stepVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.28, ease: EASE }}
+          className="w-full max-w-lg"
+        >
           {step === 1 && (
             <div className="space-y-6">
               <div className="text-center mb-8">
@@ -578,7 +597,8 @@ export default function OnboardingPage() {
               </button>
             )}
           </div>
-        </div>
+        </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   )
