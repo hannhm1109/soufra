@@ -46,11 +46,15 @@ export default async function GroceryPage() {
     }
   }
 
-  const budgetPercent = groceryList && user.weeklyBudget
-    ? Math.min((groceryList.totalCost! / user.weeklyBudget) * 100, 100)
+  const weeklyBudget = user.weeklyBudget
+  const budgetPercent = groceryList && weeklyBudget != null
+    ? Math.min((groceryList.totalCost! / weeklyBudget) * 100, 100)
     : 0
 
   const budgetColor = budgetPercent < 80 ? "#27AE60" : budgetPercent < 100 ? "#E67E22" : "#E74C3C"
+  const hasBudget = weeklyBudget != null
+  const totalCost = groceryList?.totalCost ?? 0
+  const budgetDifference = weeklyBudget != null ? weeklyBudget - totalCost : null
 
   const categoryEmojis: Record<string, string> = {
     "Meat & Protein": "🥩",
@@ -104,7 +108,9 @@ export default async function GroceryPage() {
                   </span>
                 </div>
                 <span className="font-bold text-lg" style={{ color: budgetColor }}>
-                  {groceryList.totalCost?.toFixed(0)} / {user.weeklyBudget} DH
+                  {hasBudget
+                    ? `${totalCost.toFixed(0)} / ${weeklyBudget} DH`
+                    : `${totalCost.toFixed(0)} DH`}
                 </span>
               </div>
               <div className="h-3 rounded-full mb-2" style={{ backgroundColor: "#E5E7EB" }}>
@@ -116,11 +122,13 @@ export default async function GroceryPage() {
               <div className="flex items-center gap-1.5 text-sm" style={{
                 color: budgetPercent < 90 ? "#27AE60" : budgetPercent < 100 ? "#E67E22" : "#E74C3C"
               }}>
-                {budgetPercent < 90
-                  ? <><CheckCircle size={14} /> {(user.weeklyBudget! - groceryList.totalCost!).toFixed(0)} DH under budget</>
+                {!hasBudget
+                  ? <><AlertTriangle size={14} /> Add a weekly budget in settings for a full budget check</>
+                  : budgetPercent < 90
+                  ? <><CheckCircle size={14} /> {budgetDifference!.toFixed(0)} DH under budget</>
                   : budgetPercent < 100
                   ? <><AlertTriangle size={14} /> Getting close to your budget</>
-                  : <><XCircle size={14} /> Over budget by {(groceryList.totalCost! - user.weeklyBudget!).toFixed(0)} DH</>
+                  : <><XCircle size={14} /> Over budget by {Math.abs(budgetDifference!).toFixed(0)} DH</>
                 }
               </div>
             </div>
@@ -161,7 +169,9 @@ export default async function GroceryPage() {
                   <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
                     {typeof groceryList.estimateSummary === "object" && groceryList.estimateSummary && "message" in groceryList.estimateSummary
                       ? String(groceryList.estimateSummary.message)
-                      : "Soufra compares your weekly budget with a realistic calorie-based grocery floor."}
+                      : hasBudget
+                      ? "Soufra compares your weekly budget with a realistic calorie-based grocery floor."
+                      : "Set a weekly budget to compare your basket against a realistic calorie-based grocery floor."}
                   </p>
                 </div>
               </div>

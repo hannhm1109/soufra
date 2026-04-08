@@ -113,6 +113,7 @@ export default function OnboardingPage() {
   }
 
   const handleFinish = async () => {
+    if (!step5Valid) return
     setLoading(true)
     const res = await fetch("/api/onboarding", {
       method: "POST",
@@ -127,6 +128,9 @@ export default function OnboardingPage() {
   }
 
   const step1Valid = !!data.gender && !!data.age && !!data.weight && !!data.height
+  const step5Valid =
+    Number.isFinite(Number.parseFloat(data.weeklyBudget)) &&
+    Number.parseFloat(data.weeklyBudget) > 0
 
   if (loading) {
     return (
@@ -589,7 +593,8 @@ export default function OnboardingPage() {
             ) : (
               <button
                 onClick={handleFinish}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all active:scale-[0.98]"
+                disabled={!step5Valid || loading}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ backgroundColor: "#E67E22" }}
               >
                 Let&apos;s go! 🍽️

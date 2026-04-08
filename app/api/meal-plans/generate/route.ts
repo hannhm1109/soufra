@@ -24,6 +24,9 @@ interface RawMeal {
   whyChosen?: string
 }
 
+const REQUIRED_MEAL_TYPES = ["breakfast", "lunch", "dinner"] as const
+const REQUIRED_SLOT_COUNT = 7 * REQUIRED_MEAL_TYPES.length
+
 // Strip markdown code fences GPT sometimes wraps JSON in
 function extractJSON(raw: string): string {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
@@ -251,16 +254,16 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
     const seen = new Set<string>()
     const validMeals = meals.filter(meal => {
       if (!meal.name || meal.dayOfWeek == null || !meal.mealType) return false
+      if (!Number.isInteger(meal.dayOfWeek) || meal.dayOfWeek < 0 || meal.dayOfWeek > 6) return false
+      if (!REQUIRED_MEAL_TYPES.includes(meal.mealType as (typeof REQUIRED_MEAL_TYPES)[number])) return false
       const key = `${meal.dayOfWeek}:${meal.mealType}`
       if (seen.has(key)) return false
       seen.add(key)
       return true
     })
 
-    // Require at least 18/21 slots before committing anything
-    const MIN_SLOTS = 18
-    if (validMeals.length < MIN_SLOTS) {
-      throw new Error(`Insufficient meal plan: only ${validMeals.length} valid slots (need ${MIN_SLOTS})`)
+    if (validMeals.length !== REQUIRED_SLOT_COUNT) {
+      throw new Error(`Insufficient meal plan: only ${validMeals.length} valid slots (need ${REQUIRED_SLOT_COUNT})`)
     }
 
     // ── Atomic transaction: deactivate old → create new ──────────────────────

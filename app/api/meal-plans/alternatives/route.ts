@@ -8,6 +8,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const cuisine   = searchParams.get("cuisine")   ?? ""
   const excludeId = searchParams.get("excludeId") ?? ""
@@ -16,6 +21,13 @@ export async function GET(req: Request) {
     where: {
       cuisine,
       id: { not: excludeId },
+      mealPlanSlots: {
+        some: {
+          mealPlan: {
+            userId: user.id,
+          },
+        },
+      },
     },
     take: 4,
     orderBy: { createdAt: "desc" },

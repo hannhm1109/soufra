@@ -26,6 +26,24 @@ export async function PATCH(req: Request) {
 
   // ── Recipe swap ──────────────────────────────────────────────
   if (body.recipeId !== undefined) {
+    const recipe = await prisma.recipe.findFirst({
+      where: {
+        id: body.recipeId,
+        mealPlanSlots: {
+          some: {
+            mealPlan: {
+              userId: user.id,
+            },
+          },
+        },
+      },
+      select: { id: true },
+    })
+
+    if (!recipe) {
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 })
+    }
+
     await prisma.mealPlanSlot.update({
       where: { id: slotId },
       data: { recipeId: body.recipeId },

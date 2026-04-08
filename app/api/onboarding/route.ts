@@ -11,13 +11,29 @@ export async function POST(req: Request) {
 
   const data = await req.json()
   const calorieTarget = calculateCalories(data)
+  const age = Number.parseInt(String(data.age ?? ""), 10)
+  const weight = Number.parseFloat(String(data.weight ?? ""))
+  const height = Number.parseFloat(String(data.height ?? ""))
+  const weeklyBudget = Number.parseFloat(String(data.weeklyBudget ?? ""))
+
+  if (
+    !Number.isFinite(age) ||
+    !Number.isFinite(weight) ||
+    !Number.isFinite(height) ||
+    !Number.isFinite(weeklyBudget) ||
+    !data.gender ||
+    !data.fitnessGoal ||
+    !data.activityLevel
+  ) {
+    return NextResponse.json({ error: "Please complete your profile before continuing." }, { status: 400 })
+  }
 
   await prisma.user.update({
     where: { email: session.user.email },
     data: {
-      age: parseInt(data.age),
-      weight: parseFloat(data.weight),
-      height: parseFloat(data.height),
+      age,
+      weight,
+      height,
       gender: data.gender || null,
       city: data.city || "Casablanca",
       marketTier: data.marketTier || "supermarket",
@@ -25,7 +41,7 @@ export async function POST(req: Request) {
       activityLevel: data.activityLevel,
       cuisines: data.cuisines,
       allergies: data.allergies,
-      weeklyBudget: parseFloat(data.weeklyBudget),
+      weeklyBudget,
       calorieTarget: calorieTarget ?? undefined,
     },
   })

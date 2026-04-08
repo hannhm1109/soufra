@@ -12,15 +12,19 @@ export async function POST(req: Request) {
 
   const data = await req.json()
   const calorieTarget = calculateCalories(data)
+  const parsedAge = Number.parseInt(String(data.age ?? ""), 10)
+  const parsedWeight = Number.parseFloat(String(data.weight ?? ""))
+  const parsedHeight = Number.parseFloat(String(data.height ?? ""))
+  const parsedBudget = Number.parseFloat(String(data.weeklyBudget ?? ""))
 
   try {
     await prisma.user.update({
       where: { email: session.user.email },
       data: {
         name: data.name,
-        age: parseInt(data.age) || null,
-        weight: parseFloat(data.weight) || null,
-        height: parseFloat(data.height) || null,
+        age: Number.isFinite(parsedAge) ? parsedAge : null,
+        weight: Number.isFinite(parsedWeight) ? parsedWeight : null,
+        height: Number.isFinite(parsedHeight) ? parsedHeight : null,
         gender: data.gender || null,
         city: data.city || "Casablanca",
         marketTier: data.marketTier || "supermarket",
@@ -28,8 +32,8 @@ export async function POST(req: Request) {
         activityLevel: data.activityLevel,
         cuisines: data.cuisines,
         allergies: data.allergies,
-        weeklyBudget: parseFloat(data.weeklyBudget) || null,
-        isRamadan: Boolean(data.isRamadan),
+        weeklyBudget: Number.isFinite(parsedBudget) ? parsedBudget : null,
+        ...(typeof data.isRamadan === "boolean" ? { isRamadan: data.isRamadan } : {}),
         calorieTarget,
       }
     })
