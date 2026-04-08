@@ -30,7 +30,9 @@ export async function POST(req: Request) {
     await sendPasswordResetEmail(email, resetUrl)
 
     return NextResponse.json({ success: true })
-  } catch {
+  } catch (err) {
+    console.error("[forgot-password] Unexpected error:", err)
+    // Still return 200 — never leak whether the email exists or the failure reason
     return NextResponse.json({ success: true })
   }
 }

@@ -28,7 +28,8 @@ export async function POST(req: Request) {
     sendWelcomeEmail(email, name || "").catch(() => {})
 
     return NextResponse.json({ message: "User created!", userId: user.id })
-  } catch {
+  } catch (err) {
+    console.error("[register] Unexpected error:", err)
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 })
   }
 }

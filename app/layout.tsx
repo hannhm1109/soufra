@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import { Toaster } from "sonner"
 import "./globals.css"
@@ -22,13 +22,14 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Soufra",
   },
+}
+
+export const viewport: Viewport = {
   themeColor: "#2D5F5D",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
