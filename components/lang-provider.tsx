@@ -1,5 +1,5 @@
 "use client"
-import { createContext, useContext, useState, useCallback } from "react"
+import { createContext, useContext, useState, useCallback, useEffect } from "react"
 import { translations, type Locale, type Translations } from "@/lib/translations"
 
 interface LangContextValue {
@@ -15,14 +15,17 @@ const LangContext = createContext<LangContextValue>({
 })
 
 export function LangProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof document === "undefined") return "en"
+  // Always start with "en" on both server and client — prevents hydration mismatch
+  const [locale, setLocaleState] = useState<Locale>("en")
+
+  // Read cookie only after hydration completes (client-only)
+  useEffect(() => {
     const stored = document.cookie
       .split("; ")
       .find((row) => row.startsWith("lang="))
       ?.split("=")[1] as Locale | undefined
-    return stored === "fr" || stored === "en" ? stored : "en"
-  })
+    if (stored === "fr" || stored === "en") setLocaleState(stored)
+  }, [])
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next)
