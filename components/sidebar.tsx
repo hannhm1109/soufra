@@ -12,17 +12,20 @@ import {
   History,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/grocery", label: "Grocery List", icon: ShoppingCart },
-  { href: "/favorites", label: "Favorites", icon: Heart },
-  { href: "/history", label: "History", icon: History },
-  { href: "/settings", label: "Settings", icon: Settings },
-]
+import { useLang } from "@/components/lang-provider"
+import LanguageSwitcher from "@/components/language-switcher"
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const { t } = useLang()
+
+  const navItems = [
+    { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: "/grocery",   label: t.nav.grocery,   icon: ShoppingCart },
+    { href: "/favorites", label: t.nav.favorites,  icon: Heart },
+    { href: "/history",   label: t.nav.history,    icon: History },
+    { href: "/settings",  label: t.nav.settings,   icon: Settings },
+  ]
 
   return (
     <>
@@ -73,8 +76,14 @@ export default function Sidebar() {
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(230,126,34,0.2)"}
         >
           <ChefHat size={20} />
-          <span className="font-medium">Browse Recipes</span>
+          <span className="font-medium">{t.nav.recipes}</span>
         </Link>
+
+        {/* Language switcher */}
+        <div className="flex items-center justify-between px-4 py-2 mb-2">
+          <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.4)" }}>Language</span>
+          <LanguageSwitcher />
+        </div>
 
         {/* Sign out */}
         <button
@@ -91,7 +100,7 @@ export default function Sidebar() {
           }}
         >
           <LogOut size={20} />
-          <span className="font-medium">Sign out</span>
+          <span className="font-medium">{t.nav.signOut}</span>
         </button>
       </div>
 
@@ -131,6 +140,7 @@ export default function Sidebar() {
             )
           })}
         </div>
+        {/* Mobile language switcher — shown as a small pill above the nav bar */}
       </div>
     </>
   )
