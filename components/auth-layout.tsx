@@ -39,19 +39,23 @@ export default function AuthLayout({ tagline, description, stats, children }: Au
         />
 
         <div className="relative z-10 text-center">
-          <Image
-            src="/logo.png"
-            alt="Soufra Logo"
-            width={160}
-            height={160}
-            className="mx-auto mb-8"
-          />
-          <h1
-            className="text-5xl font-bold mb-4"
-            style={{ color: "#D4A574", fontFamily: "var(--font-playfair)" }}
-          >
-            Soufra
-          </h1>
+          <Link href="/" className="inline-block">
+            <Image
+              src="/logo.png"
+              alt="Soufra Logo"
+              width={160}
+              height={160}
+              className="mx-auto mb-8"
+            />
+          </Link>
+          <Link href="/">
+            <h1
+              className="text-5xl font-bold mb-4 hover:opacity-80 transition-opacity"
+              style={{ color: "#D4A574", fontFamily: "var(--font-playfair)" }}
+            >
+              Soufra
+            </h1>
+          </Link>
           <p className="text-xl text-white opacity-90 mb-2">{tagline}</p>
           <p className="text-white opacity-60 text-sm max-w-xs mx-auto">{description}</p>
 
@@ -87,19 +91,23 @@ export default function AuthLayout({ tagline, description, stats, children }: Au
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <Image
-              src="/logo.png"
-              alt="Soufra Logo"
-              width={110}
-              height={110}
-              className="mx-auto mb-4"
-            />
-            <h1
-              className="text-3xl font-bold"
-              style={{ color: "#2D5F5D", fontFamily: "var(--font-playfair)" }}
-            >
-              Soufra
-            </h1>
+            <Link href="/" className="inline-block">
+              <Image
+                src="/logo.png"
+                alt="Soufra Logo"
+                width={110}
+                height={110}
+                className="mx-auto mb-4"
+              />
+            </Link>
+            <Link href="/">
+              <h1
+                className="text-3xl font-bold hover:opacity-70 transition-opacity"
+                style={{ color: "#2D5F5D", fontFamily: "var(--font-playfair)" }}
+              >
+                Soufra
+              </h1>
+            </Link>
           </div>
 
           {children}
