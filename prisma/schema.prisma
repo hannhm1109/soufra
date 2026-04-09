@@ -66,7 +66,7 @@ model MealPlan {
   totalCost     Float?
   isActive      Boolean   @default(true)
   slots         MealPlanSlot[]
-  user          User      @relation(fields: [userId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime  @default(now())
   @@index([userId, weekStart])
 }
@@ -102,7 +102,7 @@ model GroceryList {
   budgetCeiling     Float?
   estimateSummary   Json?
   items             GroceryItem[]
-  user              User          @relation(fields: [userId], references: [id])
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime      @default(now())
   @@index([userId, weekOf])
 }
@@ -135,7 +135,7 @@ model RecipeFeedback {
   userId    String
   recipeId  String
   liked     Boolean
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipe    Recipe   @relation(fields: [recipeId], references: [id])
   createdAt DateTime @default(now())
   @@unique([userId, recipeId])

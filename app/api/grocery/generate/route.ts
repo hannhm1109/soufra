@@ -82,6 +82,23 @@ export async function POST() {
     cuisineCount: user.cuisines.length,
   })
 
+  // Override budget status based on actual generated cost vs user's budget
+  let actualBudgetStatus = budgetAssessment.status
+  let actualBudgetMessage = budgetAssessment.message
+  if (user.weeklyBudget && totalCost > 0) {
+    const ratio = totalCost / user.weeklyBudget
+    if (ratio > 1.15) {
+      actualBudgetStatus = "unrealistic"
+      actualBudgetMessage = `Your grocery list costs ${totalCost.toFixed(0)} DH — ${(totalCost - user.weeklyBudget).toFixed(0)} DH over your ${user.weeklyBudget} DH budget. Generate a new meal plan to get more affordable recipes.`
+    } else if (ratio > 1.0) {
+      actualBudgetStatus = "tight"
+      actualBudgetMessage = `Your grocery list costs ${totalCost.toFixed(0)} DH — slightly over your ${user.weeklyBudget} DH budget.`
+    } else {
+      actualBudgetStatus = "on_track"
+      actualBudgetMessage = `Your grocery list costs ${totalCost.toFixed(0)} DH — within your ${user.weeklyBudget} DH budget.`
+    }
+  }
+
   await prisma.groceryList.deleteMany({
     where: { userId: user.id },
   })
@@ -94,14 +111,14 @@ export async function POST() {
       city,
       marketTier,
       priceConfidence: averageConfidence,
-      budgetStatus: budgetAssessment.status,
+      budgetStatus: actualBudgetStatus,
       budgetFloor: budgetAssessment.recommendedFloor,
       budgetCeiling: budgetAssessment.estimatedCeiling,
       estimateSummary: {
         confidenceLabel: getConfidenceLabel(averageConfidence),
         marketTier,
         city,
-        message: budgetAssessment.message,
+        message: actualBudgetMessage,
       },
       items: {
         create: groceryItems,

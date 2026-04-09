@@ -212,6 +212,7 @@ STRICT RULES:
 9. Ingredients must include quantities (e.g. "200g chicken breast", "2 tbsp olive oil")
 10. difficulty must be one of: "easy", "medium", "hard"
 11. whyChosen: one concise sentence (max 15 words) explaining why this specific meal was chosen for this user based on their profile and preferences
+12. BUDGET CONSTRAINT: The user's total weekly grocery budget is ${user.weeklyBudget ?? "limited"} DH for all 21 meals. Per-meal ingredient cost should average ~${user.weeklyBudget ? Math.round(user.weeklyBudget / 21) : 30} DH. Prefer affordable staples: eggs, lentils, chickpeas, sardines, chicken thighs (not breast), seasonal vegetables, canned tomatoes, couscous, rice, bread. Avoid expensive ingredients: imported seafood, large lamb cuts, out-of-season exotic produce. Reuse ingredients across meals to reduce overall cost (e.g. if chicken appears at dinner, use the leftovers in a lunch salad).
 
 Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Exactly this structure:
 {
