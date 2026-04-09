@@ -33,6 +33,18 @@ function extractJSON(raw: string): string {
   return fenced ? fenced[1].trim() : raw.trim()
 }
 
+function enforceCalorieTarget(meal: RawMeal, target: number) {
+  const raw = meal.calories ?? 0
+  if (raw <= 0) { meal.calories = target; return }
+  if (raw > target * 1.10) {
+    const scale = target / raw
+    meal.calories = target
+    meal.protein  = Math.round((meal.protein  ?? 0) * scale)
+    meal.carbs    = Math.round((meal.carbs    ?? 0) * scale)
+    meal.fats     = Math.round((meal.fats     ?? 0) * scale)
+  }
+}
+
 async function analyzeUserFeedback(userId: string) {
   const feedback = await prisma.recipeFeedback.findMany({
     where: { userId },
@@ -192,7 +204,7 @@ STRICT RULES:
 1. Generate exactly 21 meals — 7 days (dayOfWeek 0=Monday to 6=Sunday) × 3 meal types: breakfast, lunch, dinner
 2. ALLERGIES: zero tolerance — check every ingredient
 3. Distribute cuisines proportionally across the week based on user preferences
-4. Each meal's calories must be close to its target: breakfast ~${breakfast}, lunch ~${lunch}, dinner ~${dinner}
+4. STRICT calorie targets — each meal MUST stay within 10% of its target. Breakfast: ${breakfast} kcal (max ${Math.round(breakfast*1.10)}), Lunch: ${lunch} kcal (max ${Math.round(lunch*1.10)}), Dinner: ${dinner} kcal (max ${Math.round(dinner*1.10)}). If a recipe is naturally higher, reduce the serving size or simplify ingredients. Never exceed these maximums.
 5. Macros must be realistic and add up: protein + carbs + fats should roughly equal calories ÷ 4
 6. Never repeat the same recipe name in this plan
 7. Use ingredients available in Moroccan markets (souks), priced in DH
@@ -284,6 +296,12 @@ Respond ONLY with valid JSON — no markdown, no explanation, no code fences. Ex
 
       // Create all recipes and slots inside the transaction
       for (const meal of validMeals) {
+        // Enforce calorie targets before saving
+        const mealTarget = meal.mealType === "breakfast" ? breakfast
+          : meal.mealType === "lunch" ? lunch
+          : dinner
+        enforceCalorieTarget(meal, mealTarget)
+
         const recipe = await tx.recipe.create({
           data: {
             name:         meal.name!,

@@ -35,6 +35,23 @@ export async function POST(req: Request) {
   return NextResponse.json({ success: true, feedback })
 }
 
+export async function DELETE(req: Request) {
+  const session = await auth()
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { recipeId } = await req.json()
+  const user = await prisma.user.findUnique({ where: { email: session.user.email } })
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+  await prisma.recipeFeedback.deleteMany({
+    where: { userId: user.id, recipeId },
+  })
+
+  return NextResponse.json({ success: true })
+}
+
 export async function GET(req: Request) {
   const session = await auth()
   if (!session?.user?.email) {

@@ -137,6 +137,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
     update(field, updated)
   }
 
+  const planAffectingChanged =
+    JSON.stringify([...data.cuisines].sort()) !== JSON.stringify([...baseline.cuisines].sort()) ||
+    data.fitnessGoal !== baseline.fitnessGoal ||
+    data.activityLevel !== baseline.activityLevel ||
+    data.gender !== baseline.gender ||
+    data.age !== baseline.age ||
+    data.weight !== baseline.weight ||
+    data.height !== baseline.height ||
+    data.allergies.join(",") !== baseline.allergies.join(",") ||
+    data.isRamadan !== baseline.isRamadan
+
   const handleSave = async () => {
     setLoading(true)
     setError("")
@@ -147,9 +158,14 @@ export default function SettingsForm({ user }: { user: UserData }) {
         body: JSON.stringify(data),
       })
       if (res.ok) {
+        const needsRegen = planAffectingChanged
         setBaseline(data)
         setSaved(true)
-        toast.success("Settings saved!")
+        if (needsRegen) {
+          toast.success("Settings saved! Go to the dashboard and generate a new plan to apply your changes.", { duration: 6000 })
+        } else {
+          toast.success("Settings saved!")
+        }
         router.refresh()
         setTimeout(() => setSaved(false), 2000)
       } else {
@@ -168,6 +184,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
 
   return (
     <div className="space-y-5 pb-24">
+      {planAffectingChanged && (
+        <div
+          className="flex items-start gap-3 rounded-2xl p-4"
+          style={{ backgroundColor: "#FFFBEB", border: "1px solid #FDE68A" }}
+        >
+          <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#F59E0B" }} />
+          <p className="text-sm" style={{ color: "#92400E" }}>
+            You&apos;ve changed plan-affecting settings (cuisines, goal, or profile). Save then <strong>generate a new meal plan</strong> from the dashboard to apply them.
+          </p>
+        </div>
+      )}
       <div className="rounded-2xl p-6" style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
         <SectionHeader
           icon={User}

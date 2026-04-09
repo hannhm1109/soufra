@@ -77,7 +77,7 @@ export default async function GroceryPage() {
       <div data-no-print>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3" style={{ color: "#2C3E50" }}>
               Grocery List
@@ -87,9 +87,11 @@ export default async function GroceryPage() {
               Auto-generated from your weekly meal plan using {marketTierLabel.toLowerCase()} pricing in {groceryList?.city ?? user.city ?? "Casablanca"}
             </p>
           </div>
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <ReceiptUpload />
             {groceryList && <PrintGroceryButton />}
+            {/* visual divider between utility actions and primary CTA */}
+            <div className="w-px h-6 self-center mx-1" style={{ backgroundColor: "#E5E7EB" }} />
             <GenerateGroceryButton />
           </div>
         </div>

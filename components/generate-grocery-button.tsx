@@ -34,7 +34,7 @@ export default function GenerateGroceryButton() {
     <button
       onClick={handleGenerate}
       disabled={loading}
-      className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:shadow-lg disabled:opacity-70"
+      className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:shadow-md disabled:opacity-70"
       style={{ backgroundColor: "#2D5F5D" }}>
       {loading ? (
         <>

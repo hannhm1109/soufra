@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { Heart, Clock, Flame, ChefHat } from "lucide-react"
+import { Heart } from "lucide-react"
 import Link from "next/link"
+import FavoriteCard from "@/components/favorite-card"
 
 export default async function FavoritesPage() {
   const session = await auth()
@@ -22,14 +23,6 @@ export default async function FavoritesPage() {
   if (!user) redirect("/login")
 
   const likedRecipes = user.feedback.map(f => f.recipe)
-
-  const cuisineColors: Record<string, { bg: string; color: string }> = {
-    moroccan: { bg: "#FFF7F0", color: "#E67E22" },
-    french: { bg: "#F0F7FF", color: "#3498DB" },
-    mediterranean: { bg: "#F0FFF4", color: "#27AE60" },
-    italian: { bg: "#FFF0F0", color: "#E74C3C" },
-    healthy: { bg: "#F0F7F7", color: "#2D5F5D" },
-  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -75,77 +68,9 @@ export default async function FavoritesPage() {
 
           {/* Recipe Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {likedRecipes.map((recipe) => {
-              const colors = cuisineColors[recipe.cuisine] || { bg: "#F0F7F7", color: "#2D5F5D" }
-              return (
-                <Link key={recipe.id} href={`/dashboard/recipe/${recipe.id}`}>
-                  <div
-                    className="rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
-                    style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-
-                    {/* Cuisine badge */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span
-                        className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full"
-                        style={{ backgroundColor: colors.bg, color: colors.color }}>
-                        {recipe.cuisine}
-                      </span>
-                      <Heart size={16} style={{ color: "#E74C3C" }} fill="#E74C3C" />
-                    </div>
-
-                    {/* Recipe name */}
-                    <h3
-                      className="font-bold text-lg mb-3 leading-tight"
-                      style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
-                      {recipe.name}
-                    </h3>
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-3">
-                      {[
-                        { icon: Clock, label: `${recipe.prepTime + recipe.cookTime}min` },
-                        { icon: Flame, label: `${recipe.calories}cal` },
-                        { icon: ChefHat, label: recipe.difficulty },
-                      ].map(({ icon: Icon, label }) => (
-                        <div key={label} className="flex items-center gap-1">
-                          <Icon size={12} style={{ color: "#9CA3AF" }} />
-                          <span className="text-xs" style={{ color: "#6B7280" }}>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Macros bar */}
-                    <div className="mt-4">
-                      <div className="flex rounded-full overflow-hidden h-2">
-                        <div
-                          style={{
-                            width: `${(recipe.protein / (recipe.protein + recipe.carbs + recipe.fats)) * 100}%`,
-                            backgroundColor: "#E67E22"
-                          }}
-                        />
-                        <div
-                          style={{
-                            width: `${(recipe.carbs / (recipe.protein + recipe.carbs + recipe.fats)) * 100}%`,
-                            backgroundColor: "#2D5F5D"
-                          }}
-                        />
-                        <div
-                          style={{
-                            width: `${(recipe.fats / (recipe.protein + recipe.carbs + recipe.fats)) * 100}%`,
-                            backgroundColor: "#D4A574"
-                          }}
-                        />
-                      </div>
-                      <div className="flex justify-between mt-1">
-                        <span className="text-xs" style={{ color: "#E67E22" }}>P {recipe.protein}g</span>
-                        <span className="text-xs" style={{ color: "#2D5F5D" }}>C {recipe.carbs}g</span>
-                        <span className="text-xs" style={{ color: "#D4A574" }}>F {recipe.fats}g</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+            {likedRecipes.map((recipe) => (
+              <FavoriteCard key={recipe.id} recipe={recipe} />
+            ))}
           </div>
         </>
       ) : (

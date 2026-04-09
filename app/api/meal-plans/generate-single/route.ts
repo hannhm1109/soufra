@@ -11,6 +11,22 @@ const CALORIE_SPLIT: Record<string, number> = {
   dinner: 0.35,
 }
 
+function enforceCalorieTarget(meal: Record<string, unknown>, target: number) {
+  const raw = Number(meal.calories)
+  if (!raw || raw <= 0) {
+    meal.calories = target
+    return
+  }
+  // Allow up to 10% variance; beyond that, scale macros down proportionally
+  if (raw > target * 1.10) {
+    const scale = target / raw
+    meal.calories = target
+    meal.protein  = Math.round(Number(meal.protein  ?? 0) * scale)
+    meal.carbs    = Math.round(Number(meal.carbs    ?? 0) * scale)
+    meal.fats     = Math.round(Number(meal.fats     ?? 0) * scale)
+  }
+}
+
 function extractJSON(raw: string): string {
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
   return fenced ? fenced[1].trim() : raw.trim()
@@ -43,7 +59,7 @@ export async function POST(req: Request) {
 
   const prompt = `Generate ONE ${slot.mealType} recipe with these constraints:
 - Cuisine: ${cuisine}
-- Calorie target: ~${mealCalories} kcal
+- STRICT calorie target: ${mealCalories} kcal (MUST be within 10% — between ${Math.round(mealCalories * 0.9)} and ${Math.round(mealCalories * 1.10)} kcal). This is a hard limit. If a recipe naturally has more calories, reduce the serving size or simplify ingredients until it fits. Do NOT exceed ${Math.round(mealCalories * 1.10)} kcal under any circumstances.
 - Fitness goal: ${user.fitnessGoal ?? "maintain"}
 - Allergies to avoid: ${user.allergies.length > 0 ? user.allergies.join(", ") : "none"}
 - Different from: "${slot.recipe.name}" (do NOT regenerate this)
@@ -86,6 +102,8 @@ Respond ONLY with valid JSON (no markdown). Use exactly this structure:
 
     const parsed = JSON.parse(extractJSON(raw))
     const meal = parsed.meal ?? parsed
+
+    enforceCalorieTarget(meal, mealCalories)
 
     const recipe = await prisma.recipe.create({
       data: {

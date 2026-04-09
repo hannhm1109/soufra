@@ -284,6 +284,19 @@ export default async function DashboardPage() {
           )}
         </div>
 
+        {/* Stale-plan notice — shown when today's meals exceed target by >15% */}
+        {user.calorieTarget && activePlan && caloriePct > 115 && (
+          <div
+            className="flex items-start gap-2.5 rounded-xl p-3 mb-5 text-sm"
+            style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA" }}>
+            <AlertCircle size={15} className="flex-shrink-0 mt-0.5" style={{ color: "#E74C3C" }} />
+            <p style={{ color: "#B91C1C" }}>
+              Your current plan was generated before calorie limits were enforced — that&apos;s why today shows {todayCalories} kcal instead of {user.calorieTarget} kcal.{" "}
+              <span className="font-semibold">Generate a new plan</span> to fix this.
+            </p>
+          </div>
+        )}
+
         {/* 3 meal columns */}
         {activePlan ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
