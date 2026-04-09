@@ -81,7 +81,7 @@ model MealPlanSlot {
   hasLeftovers      Boolean   @default(false)
   leftoverServings  Int?
   whyChosen         String?
-  mealPlan          MealPlan  @relation(fields: [mealPlanId], references: [id])
+  mealPlan          MealPlan  @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
   recipe            Recipe    @relation(fields: [recipeId], references: [id])
   createdAt         DateTime  @default(now())
   @@unique([mealPlanId, dayOfWeek, mealType])
@@ -124,7 +124,7 @@ model GroceryItem {
   alternativeStore String?
   checked          Boolean         @default(false)
   ingredient       Ingredient?     @relation(fields: [ingredientId], references: [id])
-  groceryList      GroceryList     @relation(fields: [groceryListId], references: [id])
+  groceryList      GroceryList     @relation(fields: [groceryListId], references: [id], onDelete: Cascade)
   createdAt        DateTime        @default(now())
   @@index([groceryListId])
   @@index([ingredientId])
