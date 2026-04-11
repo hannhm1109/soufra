@@ -2,8 +2,22 @@
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Eye, EyeOff, CheckCircle } from "lucide-react"
+import { Eye, EyeOff, CheckCircle, Check, X } from "lucide-react"
 import AuthLayout from "@/components/auth-layout"
+
+function getPasswordStrength(password: string) {
+  if (password.length === 0) return null
+  if (password.length < 8) return { label: "Too short", color: "#EF4444", width: "20%" }
+  let score = 0
+  if (/[A-Z]/.test(password))        score++
+  if (/[a-z]/.test(password))        score++
+  if (/[0-9]/.test(password))        score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+  if (password.length >= 12)         score++
+  if (score <= 1) return { label: "Weak",   color: "#F97316", width: "33%" }
+  if (score <= 3) return { label: "Good",   color: "#EAB308", width: "66%" }
+  return                 { label: "Strong", color: "#22C55E", width: "100%" }
+}
 
 const INPUT_CLASS =
   "w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none transition-colors focus:border-[#2D5F5D] focus:ring-1 focus:ring-[#2D5F5D] text-sm"
@@ -34,7 +48,11 @@ function ResetPasswordForm() {
     )
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const strength = getPasswordStrength(password)
+  const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
+  const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword
+
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     setError("")
 
@@ -118,6 +136,19 @@ function ResetPasswordForm() {
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {strength && (
+            <div className="mt-2">
+              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: strength.width, backgroundColor: strength.color }}
+                />
+              </div>
+              <p className="text-xs mt-1 font-medium" style={{ color: strength.color }}>
+                {strength.label}
+              </p>
+            </div>
+          )}
         </div>
 
         <div>
@@ -132,6 +163,9 @@ function ResetPasswordForm() {
               placeholder="••••••••"
               required
               className={`${INPUT_CLASS} pr-12`}
+              style={{
+                borderColor: passwordsMismatch ? "#EF4444" : passwordsMatch ? "#22C55E" : undefined,
+              }}
             />
             <button
               type="button"
@@ -141,12 +175,17 @@ function ResetPasswordForm() {
             >
               {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            {passwordsMatch    && <Check size={16} className="absolute right-10 top-1/2 -translate-y-1/2 text-green-500" />}
+            {passwordsMismatch && <X    size={16} className="absolute right-10 top-1/2 -translate-y-1/2 text-red-500"   />}
           </div>
+          {passwordsMismatch && (
+            <p className="text-xs mt-1 text-red-500">Passwords don&apos;t match</p>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || passwordsMismatch}
           className="w-full py-3 rounded-xl font-semibold text-white transition-opacity disabled:opacity-60"
           style={{ backgroundColor: "#E67E22" }}
         >

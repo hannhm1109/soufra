@@ -11,17 +11,18 @@ const INPUT_CLASS =
 
 function getPasswordStrength(password: string) {
   if (password.length === 0) return null
-  const hasUpper = /[A-Z]/.test(password)
-  const hasLower = /[a-z]/.test(password)
-  const hasNumber = /[0-9]/.test(password)
-  const hasSpecial = /[^A-Za-z0-9]/.test(password)
-  const isLong = password.length >= 8
+  if (password.length < 8) return { label: "Too short", color: "#EF4444", width: "20%" }
 
-  if (!isLong) return { label: "Too short", color: "#EF4444", width: "20%" }
-  const score = [hasUpper && hasLower, hasNumber, hasSpecial].filter(Boolean).length
-  if (score === 1) return { label: "Weak", color: "#F97316", width: "40%" }
-  if (score === 2) return { label: "Good", color: "#EAB308", width: "70%" }
-  return { label: "Strong", color: "#22C55E", width: "100%" }
+  let score = 0
+  if (/[A-Z]/.test(password))        score++ // uppercase
+  if (/[a-z]/.test(password))        score++ // lowercase
+  if (/[0-9]/.test(password))        score++ // number
+  if (/[^A-Za-z0-9]/.test(password)) score++ // special char
+  if (password.length >= 12)         score++ // length bonus
+
+  if (score <= 1) return { label: "Weak",   color: "#F97316", width: "33%" }
+  if (score <= 3) return { label: "Good",   color: "#EAB308", width: "66%" }
+  return                 { label: "Strong", color: "#22C55E", width: "100%" }
 }
 
 export default function RegisterPage() {
@@ -39,7 +40,7 @@ export default function RegisterPage() {
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword
   const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
@@ -56,30 +57,28 @@ export default function RegisterPage() {
       return
     }
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    })
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), password }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      setError(data.error || "Something went wrong")
-      setLoading(false)
-      return
-    }
+      if (!res.ok) {
+        setError(data.error || "Something went wrong")
+        return
+      }
 
-    const loginResult = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    })
-
-    if (loginResult?.ok) {
-      router.push("/onboarding")
-    } else {
+      // Don't auto-login — the write goes to the direct DB URL and reads
+      // go through the pooler, so the new user may not be visible yet.
+      // The login page shows a clear "Account created!" banner.
       router.push("/login?registered=true")
+    } catch {
+      setError("Network error. Please check your connection and try again.")
+    } finally {
+      setLoading(false)
     }
   }
 

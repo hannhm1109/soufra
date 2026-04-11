@@ -80,6 +80,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const { step, data, setStep, updateData } = useOnboardingStore()
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState("")
   const [direction, setDirection] = useState<"right" | "left">("right")
 
   const previewCalories = useMemo(() => calculateCalories(data), [data])
@@ -115,19 +116,29 @@ export default function OnboardingPage() {
   const handleFinish = async () => {
     if (!step5Valid) return
     setLoading(true)
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    if (res.ok) {
-      router.push("/dashboard")
-    } else {
+    setSubmitError("")
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) {
+        router.push("/dashboard")
+      } else {
+        const body = await res.json().catch(() => ({}))
+        setSubmitError(body.error || "Something went wrong. Please try again.")
+        setLoading(false)
+      }
+    } catch {
+      setSubmitError("Network error. Please check your connection and try again.")
       setLoading(false)
     }
   }
 
   const step1Valid = !!data.gender && !!data.age && !!data.weight && !!data.height
+  const step2Valid = !!data.fitnessGoal && !!data.activityLevel
+  const step3Valid = data.cuisines.length > 0
   const step5Valid =
     Number.isFinite(Number.parseFloat(data.weeklyBudget)) &&
     Number.parseFloat(data.weeklyBudget) > 0
@@ -568,7 +579,13 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          <div className="flex gap-4 mt-8">
+          {submitError && (
+            <div className="mt-6 p-3 rounded-xl text-sm text-red-600 bg-red-50 border border-red-100">
+              {submitError}
+            </div>
+          )}
+
+          <div className="flex gap-4 mt-4">
             {step > 1 && (
               <button
                 onClick={goBack}
@@ -583,7 +600,11 @@ export default function OnboardingPage() {
             {step < 5 ? (
               <button
                 onClick={goNext}
-                disabled={step === 1 && !step1Valid}
+                disabled={
+                  (step === 1 && !step1Valid) ||
+                  (step === 2 && !step2Valid) ||
+                  (step === 3 && !step3Valid)
+                }
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ backgroundColor: "#2D5F5D" }}
               >
