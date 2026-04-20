@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { useOnboardingStore } from "@/lib/onboarding-store"
@@ -14,8 +14,9 @@ import {
   ChevronRight,
   ChevronLeft,
   Check,
-  Store,
-  MapPin,
+  ShoppingBag,
+  ShoppingCart,
+  Star,
 } from "lucide-react"
 
 const steps = [
@@ -27,42 +28,41 @@ const steps = [
 ]
 
 const fitnessGoals = [
-  { value: "lose_weight", label: "Lose Weight", emoji: "🔥", desc: "Calorie deficit plan" },
-  { value: "gain_muscle", label: "Gain Muscle", emoji: "💪", desc: "High protein plan" },
-  { value: "maintain", label: "Stay Healthy", emoji: "⚖️", desc: "Balanced nutrition" },
-  { value: "eat_better", label: "Eat Better", emoji: "🥗", desc: "Improve food quality" },
+  { value: "lose_weight", label: "Lose Weight",  img: "/icons/lose-weight.png",  iconBg: "#FEF2F2", desc: "Calorie deficit plan" },
+  { value: "gain_muscle", label: "Gain Muscle",  img: "/icons/gain-muscle.png",  iconBg: "#EFF6FF", desc: "High protein plan"    },
+  { value: "maintain",    label: "Stay Healthy", img: "/icons/stay-healthy.png", iconBg: "#F0FDF4", desc: "Balanced nutrition"   },
+  { value: "eat_better",  label: "Eat Better",   img: "/icons/eat-better.png",   iconBg: "#FFF7ED", desc: "Improve food quality" },
 ]
 
 const activityLevels = [
-  { value: "sedentary", label: "Sedentary", desc: "Little or no exercise" },
-  { value: "light", label: "Light", desc: "1-3 days/week" },
-  { value: "moderate", label: "Moderate", desc: "3-5 days/week" },
-  { value: "very_active", label: "Very Active", desc: "6-7 days/week" },
+  { value: "sedentary",   label: "Sedentary",   desc: "No exercise" },
+  { value: "light",       label: "Light",       desc: "1-3 d/wk"    },
+  { value: "moderate",    label: "Moderate",    desc: "3-5 d/wk"    },
+  { value: "very_active", label: "Very Active", desc: "6-7 d/wk"    },
 ]
 
 const cuisineOptions = [
-  { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
-  { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
-  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
-  { value: "french", label: "French", emoji: "🇫🇷" },
-  { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
+  { value: "moroccan",       label: "Moroccan",           img: "/icons/morrocan.png",       iconBg: "#FFFBEB", tagline: "Tagine, couscous & harira"       },
+  { value: "mediterranean",  label: "Mediterranean",      img: "/icons/mediterranean.png",  iconBg: "#F0F9FF", tagline: "Grilled fish, salads & olive oil" },
+  { value: "healthy",        label: "Healthy Essentials", img: "/icons/healthy.png",        iconBg: "#F0FDF4", tagline: "Clean proteins & simple sides"    },
+  { value: "middle_eastern", label: "Middle Eastern",     img: "/icons/middle-eastern.png", iconBg: "#F5F3FF", tagline: "Falafel, lentils & wraps"         },
+  { value: "italian",        label: "Italian",            img: "/icons/italian.png",        iconBg: "#FEF2F2", tagline: "Pasta, risotto & simple sauces"   },
 ]
 
 const allergyOptions = [
-  { value: "gluten", label: "Gluten", emoji: "🌾" },
-  { value: "lactose", label: "Lactose", emoji: "🥛" },
-  { value: "peanuts", label: "Peanuts", emoji: "🥜" },
-  { value: "shellfish", label: "Shellfish", emoji: "🦐" },
-  { value: "eggs", label: "Eggs", emoji: "🥚" },
-  { value: "soy", label: "Soy", emoji: "🫘" },
+  { value: "gluten",    label: "Gluten",    img: "/icons/allergy-gluten.png"    },
+  { value: "lactose",   label: "Lactose",   img: "/icons/allergy-lactose.png"   },
+  { value: "peanuts",   label: "Peanuts",   img: "/icons/allergy-peanuts.png"   },
+  { value: "shellfish", label: "Shellfish", img: "/icons/allergy-shellfish.png" },
+  { value: "eggs",      label: "Eggs",      img: "/icons/allergy-eggs.png"      },
+  { value: "soy",       label: "Soy",       img: "/icons/allergy-soy.png"       },
 ]
 
-const cityOptions = ["Casablanca", "Rabat", "Marrakech", "Tangier", "Fes", "Agadir"]
 
 const marketTierOptions = [
-  { value: "souk", label: "Souk Saver", desc: "Lowest realistic local market prices" },
-  { value: "supermarket", label: "Supermarket", desc: "Balanced branded + fresh shopping" },
-  { value: "premium", label: "Premium", desc: "Higher-end and convenience-heavy basket" },
+  { value: "souk",        label: "Souk",        icon: ShoppingBag,  desc: "Local market prices" },
+  { value: "supermarket", label: "Supermarket",  icon: ShoppingCart, desc: "Branded + fresh"      },
+  { value: "premium",     label: "Premium",      icon: Star,         desc: "Higher-end basket"    },
 ]
 
 const INPUT_CLASS =
@@ -82,6 +82,8 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState("")
   const [direction, setDirection] = useState<"right" | "left">("right")
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const previewCalories = useMemo(() => calculateCalories(data), [data])
   const budgetAssessment = useMemo(
@@ -212,12 +214,12 @@ export default function OnboardingPage() {
       </div>
 
       <div className="flex-1 flex items-center justify-center px-6 overflow-hidden">
-        <AnimatePresence mode="wait" custom={direction}>
+        <AnimatePresence mode="wait" custom={direction} initial={false}>
         <motion.div
           key={step}
           custom={direction}
           variants={stepVariants}
-          initial="enter"
+          initial={mounted ? "enter" : false}
           animate="center"
           exit="exit"
           transition={{ duration: 0.28, ease: EASE }}
@@ -290,61 +292,72 @@ export default function OnboardingPage() {
 
           {step === 2 && (
             <div>
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#2D5F5D" }}>
-                  <Target size={32} color="white" />
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#2D5F5D" }}>
+                  <Target size={24} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>What&apos;s your goal?</h2>
-                <p style={{ color: "#6B7280" }}>We&apos;ll tailor your meal plan around it</p>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "#2C3E50" }}>What&apos;s your goal?</h2>
+                <p className="text-sm" style={{ color: "#6B7280" }}>We&apos;ll tailor your meal plan around it</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-5">
                 {fitnessGoals.map((goal) => {
                   const selected = data.fitnessGoal === goal.value
                   return (
                     <button
                       key={goal.value}
                       onClick={() => updateData({ fitnessGoal: goal.value })}
-                      className="p-4 rounded-2xl border-2 text-left transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      className="p-3 rounded-2xl border-2 text-left transition-all duration-200 hover:shadow-md active:scale-[0.97]"
                       style={{
                         borderColor: selected ? "#2D5F5D" : "#E5E7EB",
                         backgroundColor: selected ? "#F0F7F7" : "white",
                         transform: selected ? "scale(1.02)" : "scale(1)",
                       }}
                     >
-                      <div className="text-3xl mb-2">{goal.emoji}</div>
-                      <div className="font-semibold" style={{ color: "#2C3E50" }}>{goal.label}</div>
-                      <div className="text-sm" style={{ color: "#6B7280" }}>{goal.desc}</div>
-                      {selected && (
-                        <div className="mt-2 flex items-center gap-1 text-xs font-medium" style={{ color: "#2D5F5D" }}>
-                          <Check size={12} /> Selected
+                      <div className="flex items-start justify-between mb-2">
+                        <div
+                          className="w-10 h-10 rounded-xl flex items-center justify-center p-1.5"
+                          style={{ backgroundColor: goal.iconBg }}
+                        >
+                          <img src={goal.img} alt={goal.label} className="w-full h-full object-contain" />
                         </div>
-                      )}
+                        {selected && (
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: "#2D5F5D" }}
+                          >
+                            <Check size={11} color="white" strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="font-semibold text-sm" style={{ color: "#2C3E50" }}>{goal.label}</div>
+                      <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{goal.desc}</div>
                     </button>
                   )
                 })}
               </div>
 
               <div>
-                <p className="text-sm font-medium mb-3" style={{ color: "#2C3E50" }}>Activity Level</p>
-                <div className="grid grid-cols-2 gap-3">
+                <p className="text-sm font-medium mb-2.5" style={{ color: "#2C3E50" }}>Activity Level</p>
+                <div className="grid grid-cols-4 gap-2">
                   {activityLevels.map((level) => {
                     const selected = data.activityLevel === level.value
                     return (
                       <button
                         key={level.value}
                         onClick={() => updateData({ activityLevel: level.value })}
-                        className="p-3 rounded-xl border-2 text-left transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
+                        className="py-2.5 px-1.5 rounded-xl border-2 text-center transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
                         style={{
                           borderColor: selected ? "#2D5F5D" : "#E5E7EB",
                           backgroundColor: selected ? "#F0F7F7" : "white",
                         }}
                       >
-                        <div className="font-medium text-sm flex items-center justify-between" style={{ color: "#2C3E50" }}>
+                        <div className="font-semibold text-xs" style={{ color: selected ? "#2D5F5D" : "#2C3E50" }}>
                           {level.label}
-                          {selected && <Check size={14} style={{ color: "#2D5F5D" }} />}
                         </div>
-                        <div className="text-xs" style={{ color: "#6B7280" }}>{level.desc}</div>
+                        <div className="text-[10px] mt-0.5 leading-tight" style={{ color: "#9CA3AF" }}>
+                          {level.desc}
+                        </div>
                       </button>
                     )
                   })}
@@ -355,30 +368,37 @@ export default function OnboardingPage() {
 
           {step === 3 && (
             <div>
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#2D5F5D" }}>
-                  <UtensilsCrossed size={32} color="white" />
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#2D5F5D" }}>
+                  <UtensilsCrossed size={24} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Favorite cuisines?</h2>
-                <p style={{ color: "#6B7280" }}>Pick all that you love</p>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "#2C3E50" }}>Favorite cuisines?</h2>
+                <p className="text-sm" style={{ color: "#6B7280" }}>Pick all that you love — mix and match freely</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 {cuisineOptions.map((cuisine) => {
                   const selected = data.cuisines.includes(cuisine.value)
                   return (
                     <button
                       key={cuisine.value}
                       onClick={() => toggleArray("cuisines", cuisine.value)}
-                      className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      className="w-full p-3 rounded-2xl border-2 flex items-center gap-3 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98]"
                       style={{
                         borderColor: selected ? "#2D5F5D" : "#E5E7EB",
                         backgroundColor: selected ? "#F0F7F7" : "white",
-                        transform: selected ? "scale(1.02)" : "scale(1)",
                       }}
                     >
-                      <span className="text-2xl">{cuisine.emoji}</span>
-                      <span className="font-medium flex-1 text-left" style={{ color: "#2C3E50" }}>{cuisine.label}</span>
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 p-1.5"
+                        style={{ backgroundColor: cuisine.iconBg }}
+                      >
+                        <img src={cuisine.img} alt={cuisine.label} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm" style={{ color: "#2C3E50" }}>{cuisine.label}</div>
+                        <div className="text-xs mt-0.5" style={{ color: "#6B7280" }}>{cuisine.tagline}</div>
+                      </div>
                       <div
                         className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
                         style={{
@@ -397,30 +417,35 @@ export default function OnboardingPage() {
 
           {step === 4 && (
             <div>
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#E67E22" }}>
-                  <AlertCircle size={32} color="white" />
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#E67E22" }}>
+                  <AlertCircle size={24} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Any allergies?</h2>
-                <p style={{ color: "#6B7280" }}>We&apos;ll make sure to avoid these completely</p>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "#2C3E50" }}>Any allergies?</h2>
+                <p className="text-sm" style={{ color: "#6B7280" }}>We&apos;ll make sure to avoid these completely</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 {allergyOptions.map((allergy) => {
                   const selected = data.allergies.includes(allergy.value)
                   return (
                     <button
                       key={allergy.value}
                       onClick={() => toggleArray("allergies", allergy.value)}
-                      className="p-4 rounded-2xl border-2 flex items-center gap-3 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
+                      className="p-3 rounded-2xl border-2 flex items-center gap-3 transition-all duration-200 hover:shadow-md active:scale-[0.97]"
                       style={{
                         borderColor: selected ? "#E67E22" : "#E5E7EB",
                         backgroundColor: selected ? "#FFF7F0" : "white",
                         transform: selected ? "scale(1.02)" : "scale(1)",
                       }}
                     >
-                      <span className="text-2xl">{allergy.emoji}</span>
-                      <span className="font-medium flex-1 text-left" style={{ color: "#2C3E50" }}>{allergy.label}</span>
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 p-1.5"
+                        style={{ backgroundColor: "#FFF7ED" }}
+                      >
+                        <img src={allergy.img} alt={allergy.label} className="w-full h-full object-contain" />
+                      </div>
+                      <span className="font-medium text-sm flex-1 text-left" style={{ color: "#2C3E50" }}>{allergy.label}</span>
                       <div
                         className="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
                         style={{
@@ -437,138 +462,132 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => updateData({ allergies: [] })}
-                className="w-full p-3 rounded-xl border-2 text-center transition-all duration-200 hover:shadow-sm active:scale-[0.98]"
+                className="w-full p-3 rounded-xl border-2 flex items-center justify-center gap-2 font-medium text-sm transition-all duration-200 hover:shadow-sm active:scale-[0.98]"
                 style={{
                   borderColor: data.allergies.length === 0 ? "#2D5F5D" : "#E5E7EB",
                   backgroundColor: data.allergies.length === 0 ? "#F0F7F7" : "white",
-                  color: "#2C3E50",
+                  color: data.allergies.length === 0 ? "#2D5F5D" : "#6B7280",
                 }}
               >
-                {data.allergies.length === 0
-                  ? <span className="flex items-center justify-center gap-2 font-medium"><Check size={16} style={{ color: "#2D5F5D" }} /> No allergies</span>
-                  : "None - I eat everything"}
+                {data.allergies.length === 0 && <Check size={15} strokeWidth={2.5} />}
+                None — I eat everything
               </button>
             </div>
           )}
 
           {step === 5 && (
             <div>
-              <div className="text-center mb-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#27AE60" }}>
-                  <Wallet size={32} color="white" />
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3" style={{ backgroundColor: "#27AE60" }}>
+                  <Wallet size={24} color="white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>Weekly food budget?</h2>
-                <p style={{ color: "#6B7280" }}>We&apos;ll match your groceries to how and where you shop</p>
+                <h2 className="text-2xl font-bold mb-1" style={{ color: "#2C3E50" }}>Weekly food budget?</h2>
+                <p className="text-sm" style={{ color: "#6B7280" }}>We&apos;ll match your groceries to how and where you shop</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
+                {/* City input */}
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: "#2C3E50" }}>Primary city</label>
-                  <div className="relative">
-                    <MapPin size={16} className="absolute left-3 top-3.5" style={{ color: "#9CA3AF" }} />
-                    <select
-                      value={data.city}
-                      onChange={(e) => updateData({ city: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-base transition-colors focus:border-[#27AE60] focus:ring-1 focus:ring-[#27AE60]"
-                    >
-                      {cityOptions.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Your city</p>
+                  <input
+                    type="text"
+                    placeholder="e.g. Casablanca, Rabat, Fes…"
+                    value={data.city}
+                    onChange={(e) => updateData({ city: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white outline-none text-sm transition-colors focus:border-[#27AE60] focus:ring-1 focus:ring-[#27AE60]"
+                  />
                 </div>
 
+                {/* Shopping style */}
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Store size={16} style={{ color: "#2D5F5D" }} />
-                    <p className="text-sm font-medium" style={{ color: "#2C3E50" }}>Shopping style</p>
-                  </div>
-                  <div className="grid gap-3">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Shopping style</p>
+                  <div className="grid grid-cols-3 gap-2">
                     {marketTierOptions.map((option) => {
                       const selected = data.marketTier === option.value
+                      const TierIcon = option.icon
                       return (
                         <button
                           key={option.value}
                           type="button"
                           onClick={() => updateData({ marketTier: option.value })}
-                          className="p-4 rounded-xl border-2 text-left transition-all duration-150 hover:shadow-sm active:scale-[0.98]"
+                          className="py-3 px-2 rounded-xl border-2 text-center transition-all duration-150 hover:shadow-sm active:scale-[0.97]"
                           style={{
                             borderColor: selected ? "#2D5F5D" : "#E5E7EB",
                             backgroundColor: selected ? "#F0F7F7" : "white",
                           }}
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold text-sm" style={{ color: "#2C3E50" }}>{option.label}</p>
-                            {selected && <Check size={14} style={{ color: "#2D5F5D" }} />}
-                          </div>
-                          <p className="text-xs" style={{ color: "#9CA3AF" }}>{option.desc}</p>
+                          <TierIcon size={18} className="mx-auto mb-1" style={{ color: selected ? "#2D5F5D" : "#9CA3AF" }} />
+                          <div className="font-semibold text-xs" style={{ color: selected ? "#2D5F5D" : "#2C3E50" }}>{option.label}</div>
+                          <div className="text-[10px] mt-0.5 leading-tight" style={{ color: "#9CA3AF" }}>{option.desc}</div>
                         </button>
                       )
                     })}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { value: "150", label: "150 DH", desc: "Very tight" },
-                    { value: "250", label: "250 DH", desc: "Balanced" },
-                    { value: "350", label: "350 DH", desc: "Comfortable" },
-                    { value: "500", label: "500 DH", desc: "Premium" },
-                  ].map((option) => {
-                    const selected = data.weeklyBudget === option.value
-                    return (
-                      <button
-                        key={option.value}
-                        onClick={() => updateData({ weeklyBudget: option.value })}
-                        className="p-4 rounded-2xl border-2 text-center transition-all duration-200 hover:shadow-md active:scale-[0.97]"
-                        style={{
-                          borderColor: selected ? "#27AE60" : "#E5E7EB",
-                          backgroundColor: selected ? "#F0FFF4" : "white",
-                          transform: selected ? "scale(1.02)" : "scale(1)",
-                        }}
-                      >
-                        <div className="text-xl font-bold" style={{ color: "#2C3E50" }}>{option.label}</div>
-                        <div className="text-sm" style={{ color: "#6B7280" }}>{option.desc}</div>
-                        {selected && <div className="mt-1 text-xs font-medium" style={{ color: "#27AE60" }}>Selected</div>}
-                      </button>
-                    )
-                  })}
-                </div>
-
+                {/* Budget presets */}
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: "#2C3E50" }}>Or enter a custom amount</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      placeholder="300"
-                      value={data.weeklyBudget}
-                      onChange={(e) => updateData({ weeklyBudget: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-lg transition-colors focus:border-[#27AE60] focus:ring-1 focus:ring-[#27AE60]"
-                    />
-                    <span className="absolute right-4 top-3.5 font-medium" style={{ color: "#6B7280" }}>DH</span>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Weekly budget</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { value: "150", label: "150", desc: "Tight"    },
+                      { value: "250", label: "250", desc: "Balanced" },
+                      { value: "350", label: "350", desc: "Comfy"    },
+                      { value: "500", label: "500", desc: "Premium"  },
+                    ].map((option) => {
+                      const selected = data.weeklyBudget === option.value
+                      return (
+                        <button
+                          key={option.value}
+                          onClick={() => updateData({ weeklyBudget: option.value })}
+                          className="py-2.5 px-1 rounded-xl border-2 text-center transition-all duration-200 hover:shadow-sm active:scale-[0.97]"
+                          style={{
+                            borderColor: selected ? "#27AE60" : "#E5E7EB",
+                            backgroundColor: selected ? "#F0FFF4" : "white",
+                          }}
+                        >
+                          <div className="text-sm font-bold" style={{ color: "#2C3E50" }}>{option.label}</div>
+                          <div className="text-[10px]" style={{ color: "#9CA3AF" }}>DH</div>
+                          <div className="text-[10px] leading-tight" style={{ color: "#6B7280" }}>{option.desc}</div>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
+                {/* Custom input */}
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="Or type a custom amount"
+                    value={data.weeklyBudget}
+                    onChange={(e) => updateData({ weeklyBudget: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white outline-none text-sm transition-colors focus:border-[#27AE60] focus:ring-1 focus:ring-[#27AE60]"
+                  />
+                  <span className="absolute right-4 top-2.5 text-sm font-medium" style={{ color: "#9CA3AF" }}>DH</span>
+                </div>
+
+                {/* Reality check */}
                 {previewCalories && (
                   <div
-                    className="rounded-2xl p-4"
+                    className="rounded-xl p-3"
                     style={{
                       backgroundColor:
                         budgetAssessment.status === "unrealistic" ? "#FEF2F2" :
-                        budgetAssessment.status === "tight" ? "#FFF7ED" :
+                        budgetAssessment.status === "tight"        ? "#FFF7ED" :
                         "#F0FFF4",
                     }}
                   >
                     <p
-                      className="text-sm font-semibold mb-1"
+                      className="text-xs font-semibold mb-1"
                       style={{
                         color:
                           budgetAssessment.status === "unrealistic" ? "#B91C1C" :
-                          budgetAssessment.status === "tight" ? "#C2410C" :
+                          budgetAssessment.status === "tight"        ? "#C2410C" :
                           "#166534",
                       }}
                     >
-                      Reality check for {previewCalories} kcal/day
+                      Reality check · {previewCalories} kcal/day
                     </p>
                     <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
                       {budgetAssessment.message}

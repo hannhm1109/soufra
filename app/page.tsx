@@ -4,8 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import {
   Sparkles, ShoppingCart, Brain, UtensilsCrossed,
-  ChevronRight, Check, ArrowRight,
-  SlidersHorizontal, CalendarDays, ShoppingBasket, Flame
+  ChevronRight, Check, ArrowRight, Flame
 } from "lucide-react"
 
 // Sample week data — realistic Moroccan + Mediterranean week
@@ -95,7 +94,7 @@ export default function LandingPage() {
         }}>
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="Soufra" width={36} height={36} />
+            <Image src="/logo.png" alt="Soufra" width={48} height={48} />
             <span className="text-2xl font-bold" style={{ color: "#2D5F5D", fontFamily: "var(--font-playfair)" }}>
               Soufra
             </span>
@@ -304,31 +303,33 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                emoji: "🍽️",
+                img: "/icons/problem-recipes.png",
                 problem: "Recipes that fit your kitchen",
                 desc: "Not quinoa and kale. Tagine, couscous, harira, msemen, bastilla — real Moroccan and Mediterranean dishes made from ingredients you actually buy at the souk.",
                 color: "#FFF7F0",
                 border: "#E67E22",
               },
               {
-                emoji: "💰",
+                img: "/icons/problem-price.png",
                 problem: "Prices in real dirhams",
                 desc: "The grocery list shows estimated costs in MAD based on Moroccan market pricing — souk, supermarket, or premium. You see your weekly spend before you shop.",
                 color: "#F0FFF4",
                 border: "#27AE60",
               },
               {
-                emoji: "♻️",
+                img: "/icons/problem-waste.png",
                 problem: "Plans that reduce waste",
                 desc: "Leftover chicken tagine becomes tomorrow's lunch. Soufra connects your meals across the week so nothing goes to waste and your grocery list stays lean.",
                 color: "#F0F7FF",
                 border: "#3498DB",
               },
-            ].map(({ emoji, problem, desc, color, border }) => (
+            ].map(({ img, problem, desc, color, border }) => (
               <div key={problem}
                 className="p-8 rounded-3xl border-2 transition-all hover:shadow-lg hover:-translate-y-1"
                 style={{ backgroundColor: color, borderColor: border }}>
-                <div className="text-4xl mb-4">{emoji}</div>
+                <div className="w-14 h-14 mb-4">
+                  <img src={img} alt={problem} className="w-full h-full object-contain" />
+                </div>
                 <h3 className="text-xl font-bold mb-3" style={{ color: "#2C3E50" }}>{problem}</h3>
                 <p style={{ color: "#6B7280", lineHeight: 1.7 }}>{desc}</p>
               </div>
@@ -432,40 +433,40 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-8">
             {[
               {
-                icon: Sparkles,
+                img: "/icons/feature-ai.png",
                 title: "A weekly plan matched to your body",
                 desc: "Your calorie target is calculated from your age, weight, height, and fitness goal. Every meal fits your target — breakfast at 25%, lunch at 40%, dinner at 35%.",
                 highlight: "Calorie-matched to you",
                 color: "#E67E22",
               },
               {
-                icon: Brain,
+                img: "/icons/feature-brain.png",
                 title: "Gets better every time you rate",
                 desc: "Like a recipe? Dislike one? After a few ratings, Soufra detects your patterns — preferred cuisines, difficulty, cooking time — and adapts every future plan accordingly.",
                 highlight: "Learns from your feedback",
                 color: "#D4A574",
               },
               {
-                icon: ShoppingCart,
+                img: "/icons/feature-grocery.png",
                 title: "Grocery list with real Moroccan prices",
                 desc: "Every ingredient across all 21 meals is aggregated, categorized, and priced in MAD. Choose your market tier — souk, supermarket, or premium. See your total before you shop.",
                 highlight: "Priced in MAD",
                 color: "#27AE60",
               },
               {
-                icon: UtensilsCrossed,
+                img: "/icons/feature-recipe.png",
                 title: "Recipes made for your kitchen",
                 desc: "100+ Moroccan and Mediterranean recipes using ingredients from any Moroccan market. Tagines, couscous, harira, bastilla, shakshuka, stuffed vegetables — no exotic substitutes.",
                 highlight: "100+ authentic recipes",
                 color: "#3498DB",
               },
-            ].map(({ icon: Icon, title, desc, highlight, color }) => (
+            ].map(({ img, title, desc, highlight, color }) => (
               <div key={title}
                 className="p-8 rounded-3xl transition-all hover:-translate-y-1"
                 style={{ backgroundColor: "rgba(255,255,255,0.08)" }}>
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6"
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-6 p-2"
                   style={{ backgroundColor: `${color}30` }}>
-                  <Icon size={24} style={{ color }} />
+                  <img src={img} alt={title} className="w-full h-full object-contain" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
                 <p className="mb-4" style={{ color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>{desc}</p>
@@ -502,31 +503,28 @@ export default function LandingPage() {
                 step: "1",
                 title: "Tell us about you",
                 desc: "Set your fitness goal, cuisine preferences, allergies, city, and weekly grocery budget. Takes under 2 minutes.",
-                icon: SlidersHorizontal,
+                img: "/icons/how-setup.png",
                 color: "#FFF7F0",
-                iconColor: "#E67E22",
               },
               {
                 step: "2",
                 title: "Get your 21-meal plan",
                 desc: "Soufra generates breakfast, lunch, and dinner for 7 days — tailored to your calories, preferences, and budget. Done in 30 seconds.",
-                icon: CalendarDays,
+                img: "/icons/how-plan.png",
                 color: "#F0F7F7",
-                iconColor: "#2D5F5D",
               },
               {
                 step: "3",
                 title: "Shop with your list",
                 desc: "Your grocery list is auto-generated with estimated prices in MAD. Check items off as you shop. Scan receipts to improve future price estimates.",
-                icon: ShoppingBasket,
+                img: "/icons/how-shop.png",
                 color: "#F0FFF4",
-                iconColor: "#27AE60",
               },
-            ].map(({ step, title, desc, icon: Icon, color, iconColor }) => (
+            ].map(({ step, title, desc, img, color }) => (
               <div key={step} className="text-center relative">
-                <div className="w-32 h-32 rounded-3xl flex items-center justify-center mx-auto mb-6"
+                <div className="w-32 h-32 rounded-3xl flex items-center justify-center mx-auto mb-6 p-7"
                   style={{ backgroundColor: color }}>
-                  <Icon size={48} style={{ color: iconColor }} strokeWidth={1.5} />
+                  <img src={img} alt={title} className="w-full h-full object-contain" />
                 </div>
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
                   style={{ backgroundColor: "#2D5F5D", marginTop: "-8px" }}>
@@ -587,7 +585,7 @@ export default function LandingPage() {
       <footer className="py-8" style={{ backgroundColor: "#1a2530" }}>
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Soufra" width={28} height={28} />
+            <Image src="/logo.png" alt="Soufra" width={36} height={36} />
             <span className="font-bold" style={{ color: "#D4A574", fontFamily: "var(--font-playfair)" }}>Soufra</span>
           </div>
           <p className="text-sm" style={{ color: "rgba(255,255,255,0.3)" }}>
