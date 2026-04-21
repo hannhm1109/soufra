@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { getConfidenceLabel } from "@/lib/pricing"
 import { prisma } from "@/lib/prisma"
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
@@ -84,7 +85,7 @@ export default async function GroceryPage() {
               <ShoppingCart size={22} style={{ color: "#2D5F5D" }} />
             </h1>
             <p style={{ color: "#6B7280" }}>
-              Auto-generated from your weekly meal plan using {marketTierLabel.toLowerCase()} pricing in {groceryList?.city ?? user.city ?? "Casablanca"}
+              Auto-generated from your weekly meal plan using {marketTierLabel.toLowerCase()} Moroccan pricing
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -92,7 +93,17 @@ export default async function GroceryPage() {
             {groceryList && <PrintGroceryButton />}
             {/* visual divider between utility actions and primary CTA */}
             <div className="w-px h-6 self-center mx-1" style={{ backgroundColor: "#E5E7EB" }} />
-            <GenerateGroceryButton />
+            {groceryList ? (
+              <GenerateGroceryButton />
+            ) : (
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:shadow-md"
+                style={{ backgroundColor: "#2D5F5D" }}
+              >
+                Go generate a meal plan
+              </Link>
+            )}
           </div>
         </div>
 
@@ -143,13 +154,13 @@ export default async function GroceryPage() {
                   <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Price confidence</p>
                   <p className="text-lg font-bold" style={{ color: "#2C3E50" }}>{confidenceLabel}</p>
                   <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
-                    Based on your city, market tier, and Soufra&apos;s Moroccan ingredient baseline.
+                    Based on your market tier and Soufra&apos;s Moroccan ingredient baseline.
                   </p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Pricing context</p>
-                  <p className="text-lg font-bold" style={{ color: "#2C3E50" }}>{groceryList.city ?? user.city ?? "Casablanca"}</p>
-                  <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>{marketTierLabel} basket</p>
+                  <p className="text-lg font-bold" style={{ color: "#2C3E50" }}>{marketTierLabel} basket</p>
+                  <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>Moroccan pricing baseline</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-wide mb-1" style={{ color: "#9CA3AF" }}>Budget realism</p>
@@ -210,7 +221,13 @@ export default async function GroceryPage() {
             <p className="mb-6" style={{ color: "#6B7280" }}>
               Generate a meal plan first, then create your grocery list
             </p>
-            <GenerateGroceryButton />
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:shadow-md"
+              style={{ backgroundColor: "#2D5F5D" }}
+            >
+              Go generate a meal plan
+            </Link>
           </div>
         )}
       </div>

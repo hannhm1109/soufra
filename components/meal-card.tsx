@@ -61,28 +61,39 @@ export default function MealCard({
     e.stopPropagation()
     setOpen(true)
     setFetching(true)
-    const params = new URLSearchParams({
-      cuisine:   recipe.cuisine,
-      excludeId: recipe.id,
-      ...(mealType ? { mealType } : {}),
-    })
-    const res = await fetch(`/api/meal-plans/alternatives?${params}`)
-    const data = await res.json()
-    setAlternatives(data.recipes ?? [])
-    setFetching(false)
+    try {
+      const params = new URLSearchParams({
+        cuisine:   recipe.cuisine,
+        excludeId: recipe.id,
+        ...(mealType ? { mealType } : {}),
+      })
+      const res = await fetch(`/api/meal-plans/alternatives?${params}`)
+      const data = await res.json()
+      setAlternatives(data.recipes ?? [])
+    } catch {
+      setAlternatives([])
+    } finally {
+      setFetching(false)
+    }
   }
 
   const doSwap = async (newRecipeId: string) => {
     setSwapping(newRecipeId)
-    await fetch("/api/meal-plans/slots", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slotId, recipeId: newRecipeId }),
-    })
-    setOpen(false)
-    setSwapping(null)
-    toast.success("Recipe swapped!")
-    router.refresh()
+    try {
+      const res = await fetch("/api/meal-plans/slots", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slotId, recipeId: newRecipeId }),
+      })
+      if (!res.ok) throw new Error("swap failed")
+      setOpen(false)
+      toast.success("Recipe swapped!")
+      router.refresh()
+    } catch {
+      toast.error("Couldn't swap recipe. Try again.")
+    } finally {
+      setSwapping(null)
+    }
   }
 
   const doAIGenerate = async () => {

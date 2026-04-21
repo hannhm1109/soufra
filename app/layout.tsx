@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, Playfair_Display } from "next/font/google"
 import { Toaster } from "sonner"
-import { LangProvider } from "@/components/lang-provider"
+import Providers from "@/components/providers"
 import "./globals.css"
 
 const inter = Inter({
@@ -29,8 +29,6 @@ export const viewport: Viewport = {
   themeColor: "#2D5F5D",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 }
 
 export default function RootLayout({
@@ -53,9 +51,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${playfair.variable} font-sans`}>
-        <LangProvider>
+        <Providers>
           {children}
-        </LangProvider>
+        </Providers>
         <Toaster
           position="top-right"
           richColors

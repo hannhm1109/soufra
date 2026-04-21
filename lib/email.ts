@@ -3,11 +3,11 @@ import { Resend } from "resend"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const CUISINE_LABEL: Record<string, string> = {
-  moroccan: "🇲🇦 Moroccan",
-  mediterranean: "🫒 Mediterranean",
-  healthy: "🥗 Healthy Essentials",
-  french: "🇫🇷 French",
+  moroccan:       "🇲🇦 Moroccan",
+  mediterranean:  "🫒 Mediterranean",
+  healthy:        "🥗 Healthy Essentials",
   middle_eastern: "🧆 Middle Eastern",
+  italian:        "🇮🇹 Italian",
 }
 
 const NUTRITION_TIPS: Record<string, string> = {
@@ -224,7 +224,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
         </div>
 
         <p style="font-family: Arial, sans-serif; font-size: 13px; color: #9CA3AF; margin: 0; text-align: center; line-height: 1.6;">
-          Soufra &mdash; Moroccan &amp; French cuisine, planned for you.<br/>
+          Soufra &mdash; Moroccan &amp; Mediterranean cuisine, planned for you.<br/>
           If you didn't create this account, you can ignore this email.
         </p>
 

@@ -36,6 +36,7 @@ function LoginForm() {
       if (result?.error) {
         setError("Invalid email or password")
       } else {
+        router.refresh()
         router.push("/dashboard")
       }
     } catch {
@@ -52,7 +53,7 @@ function LoginForm() {
       stats={[
         { number: "21", label: "Meals planned" },
         { number: "100+", label: "Local recipes" },
-        { number: "0", label: "Food waste" },
+        { number: "↓ 30%", label: "Less food waste" },
       ]}
     >
       <h2 className="text-3xl font-bold mb-2" style={{ color: "#2C3E50" }}>

@@ -100,7 +100,7 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            {[["Features", "#features"], ["Sample week", "#sample"], ["How it works", "#how-it-works"]].map(([label, href]) => (
+            {[["Why Soufra", "#features"], ["Sample week", "#sample"], ["How it works", "#how-it-works"]].map(([label, href]) => (
               <a key={label} href={href}
                 className="text-sm font-medium transition-colors hover:opacity-70"
                 style={{ color: "#2C3E50" }}>
@@ -200,8 +200,8 @@ export default function LandingPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p className="font-bold" style={{ color: "#2C3E50" }}>Good morning, Hanane</p>
-                    <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Monday - Week of Apr 7</p>
+                    <p className="font-bold" style={{ color: "#2C3E50" }}>Good morning, Sara</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>Monday — Week of Apr 14</p>
                   </div>
                   <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white"
                     style={{ backgroundColor: "#2D5F5D" }}>
@@ -290,7 +290,7 @@ export default function LandingPage() {
           style={{ opacity: visible.problem ? 1 : 0, transform: visible.problem ? "translateY(0)" : "translateY(40px)", transition: "all 0.7s ease" }}>
           <div className="text-center mb-16">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#E67E22" }}>
-              The problem
+              Why Soufra
             </p>
             <h2 className="text-4xl font-bold mb-4" style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
               Most meal planners were not built<br />for how people eat in Morocco.
@@ -350,7 +350,7 @@ export default function LandingPage() {
               A full week, ready in 30 seconds
             </h2>
             <p className="text-lg max-w-2xl mx-auto" style={{ color: "#6B7280" }}>
-              Here is what a typical Soufra week looks like for a Moroccan user with a 600 DH budget.
+              Here is what a Soufra week looks like for a user targeting weight loss, with a 600 DH supermarket budget.
             </p>
           </div>
 
@@ -389,8 +389,8 @@ export default function LandingPage() {
           {/* Summary chips */}
           <div className="flex flex-wrap items-center justify-center gap-4">
             {[
-              { icon: <Flame size={14} />, label: "~1,210 kcal/day avg", color: "#E67E22", bg: "#FFF7F0" },
-              { icon: <ShoppingCart size={14} />, label: "Est. 480 DH / week — Casablanca supermarket", color: "#2D5F5D", bg: "#F0F7F7" },
+              { icon: <Flame size={14} />, label: "~1,210 kcal/day · weight-loss goal", color: "#E67E22", bg: "#FFF7F0" },
+              { icon: <ShoppingCart size={14} />, label: "Est. 480 DH / week — supermarket basket", color: "#2D5F5D", bg: "#F0F7F7" },
               { icon: <UtensilsCrossed size={14} />, label: "Moroccan + Mediterranean recipes", color: "#6366F1", bg: "#F5F3FF" },
             ].map(({ icon, label, color, bg }) => (
               <div key={label}
@@ -502,7 +502,7 @@ export default function LandingPage() {
               {
                 step: "1",
                 title: "Tell us about you",
-                desc: "Set your fitness goal, cuisine preferences, allergies, city, and weekly grocery budget. Takes under 2 minutes.",
+                desc: "Set your fitness goal, cuisine preferences, allergies, shopping style, and weekly grocery budget. Takes under 2 minutes.",
                 img: "/icons/how-setup.png",
                 color: "#FFF7F0",
               },

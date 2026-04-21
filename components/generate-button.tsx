@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Sparkles, Loader2, Brain, AlertCircle, ThumbsUp, ChefHat, Zap, Clock } from "lucide-react"
+import { Sparkles, Loader2, Brain, AlertCircle, ThumbsUp, ChefHat, Zap, Clock, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 
 const LS_KEY = "soufra_last_generated"
@@ -32,14 +32,22 @@ interface Insights {
   preferredTags:       string[]
 }
 
-export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: number }) {
+export default function GenerateButton({
+  ratingCount = 0,
+  hasActivePlan = false,
+}: {
+  ratingCount?: number
+  hasActivePlan?: boolean
+}) {
   const router  = useRouter()
-  const [loading,  setLoading]  = useState(false)
-  const [insights, setInsights] = useState<Insights | null>(null)
-  const [error,    setError]    = useState("")
+  const [loading,    setLoading]    = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const [insights,   setInsights]   = useState<Insights | null>(null)
+  const [error,      setError]      = useState("")
   const { hoursAgo, stamp } = useLastGenerated()
 
   const handleGenerate = async () => {
+    setConfirming(false)
     setLoading(true)
     setError("")
     setInsights(null)
@@ -69,6 +77,15 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
     }
   }
 
+  const handleClick = () => {
+    // If there's already a plan, ask for confirmation before overwriting
+    if (hasActivePlan && !confirming) {
+      setConfirming(true)
+      return
+    }
+    handleGenerate()
+  }
+
   return (
     <div className="flex flex-col items-end gap-3">
       <div className="flex items-center gap-3">
@@ -83,7 +100,7 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
         )}
 
         <button
-          onClick={handleGenerate}
+          onClick={handleClick}
           disabled={loading}
           className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-100 disabled:scale-100 disabled:opacity-70 text-sm sm:text-base"
           style={{ backgroundColor: "#E67E22" }}>
@@ -101,8 +118,41 @@ export default function GenerateButton({ ratingCount = 0 }: { ratingCount?: numb
         </button>
       </div>
 
+      {/* Inline confirm — only shown when user has an active plan and clicks Generate */}
+      {confirming && !loading && (
+        <div
+          className="rounded-2xl p-4 w-full max-w-sm"
+          style={{ backgroundColor: "#FFF7ED", border: "1px solid #FED7AA" }}>
+          <div className="flex items-start gap-2.5 mb-3">
+            <RefreshCw size={15} className="flex-shrink-0 mt-0.5" style={{ color: "#C2410C" }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
+                Replace your current plan?
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "#B45309" }}>
+                Your 21 meals will be overwritten. Ratings and history are kept.
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleGenerate}
+              className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: "#E67E22" }}>
+              Yes, replace
+            </button>
+            <button
+              onClick={() => setConfirming(false)}
+              className="flex-1 py-2 rounded-xl text-sm font-medium border transition-colors hover:bg-gray-50"
+              style={{ borderColor: "#E5E7EB", color: "#6B7280" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Cooldown hint */}
-      {hoursAgo !== null && !loading && !error && (
+      {hoursAgo !== null && !loading && !confirming && !error && (
         <div className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full"
           style={{ backgroundColor: "#F0F7F7", color: "#6B7280" }}>
           <Clock size={11} style={{ color: "#9CA3AF" }} />

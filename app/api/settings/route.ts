@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { sanitizeCuisinePreferences } from "@/lib/cuisines"
 import { calculateCalories } from "@/lib/nutrition"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
   const parsedWeight = Number.parseFloat(String(data.weight ?? ""))
   const parsedHeight = Number.parseFloat(String(data.height ?? ""))
   const parsedBudget = Number.parseFloat(String(data.weeklyBudget ?? ""))
+  const cuisines = sanitizeCuisinePreferences(data.cuisines)
 
   try {
     await prisma.user.update({
@@ -30,7 +32,7 @@ export async function POST(req: Request) {
         marketTier: data.marketTier || "supermarket",
         fitnessGoal: data.fitnessGoal,
         activityLevel: data.activityLevel,
-        cuisines: data.cuisines,
+        cuisines,
         allergies: data.allergies,
         weeklyBudget: Number.isFinite(parsedBudget) ? parsedBudget : null,
         ...(typeof data.isRamadan === "boolean" ? { isRamadan: data.isRamadan } : {}),

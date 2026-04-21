@@ -23,12 +23,13 @@ import { calculateCalories } from "@/lib/nutrition"
 import { assessBudgetFeasibility } from "@/lib/budget-utils"
 
 const cuisineOptions = [
-  { value: "moroccan", label: "Moroccan", emoji: "🇲🇦" },
-  { value: "mediterranean", label: "Mediterranean", emoji: "🫒" },
-  { value: "healthy", label: "Healthy Essentials", emoji: "🥗" },
-  { value: "french", label: "French", emoji: "🇫🇷" },
-  { value: "middle_eastern", label: "Middle Eastern", emoji: "🧆" },
+  { value: "moroccan",       label: "Moroccan",          emoji: "🇲🇦" },
+  { value: "mediterranean",  label: "Mediterranean",     emoji: "🫒" },
+  { value: "healthy",        label: "Healthy Essentials", emoji: "🥗" },
+  { value: "middle_eastern", label: "Middle Eastern",    emoji: "🧆" },
+  { value: "italian",        label: "Italian",           emoji: "🇮🇹" },
 ]
+
 
 const allergyOptions = [
   { value: "gluten", label: "Gluten", emoji: "🌾" },
@@ -52,8 +53,6 @@ const activityLevels = [
   { value: "moderate", label: "Moderate", desc: "3-5 days / week" },
   { value: "very_active", label: "Very Active", desc: "6-7 days / week" },
 ]
-
-const cityOptions = ["Casablanca", "Rabat", "Marrakech", "Tangier", "Fes", "Agadir"]
 
 const marketTierOptions = [
   { value: "souk", label: "Souk Saver", desc: "Lowest realistic local market prices" },
@@ -314,23 +313,27 @@ export default function SettingsForm({ user }: { user: UserData }) {
           iconColor="#2D5F5D"
           iconBg="#F0F7F7"
           title="Pricing Context"
-          desc="Used to estimate Moroccan grocery costs more realistically"
+          desc="Used to estimate Moroccan grocery costs in a way that matches how you shop"
         />
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: "#2C3E50" }}>Primary city</label>
-            <div className="relative">
-              <MapPin size={16} className="absolute left-3 top-3.5" style={{ color: "#9CA3AF" }} />
-              <select
-                value={data.city}
-                onChange={(e) => update("city", e.target.value)}
-                className={`${INPUT_CLASS} pl-10`}
-              >
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
+          <div
+            className="flex items-start gap-3 rounded-xl p-4"
+            style={{ backgroundColor: "#F8FAFC", border: "1px solid #E5E7EB" }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: "#EEF2FF" }}
+            >
+              <MapPin size={16} style={{ color: "#6366F1" }} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1" style={{ color: "#2C3E50" }}>
+                Pricing baseline handled automatically
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: "#6B7280" }}>
+                Soufra uses a Moroccan pricing baseline behind the scenes, so you only choose your shopping style here.
+              </p>
             </div>
           </div>
 

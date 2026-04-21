@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import SettingsForm from "@/components/settings-form"
+import { sanitizeCuisinePreferences } from "@/lib/cuisines"
 
 export const dynamic = "force-dynamic"
 
@@ -36,7 +37,7 @@ export default async function SettingsPage() {
         marketTier: user.marketTier || "supermarket",
         fitnessGoal: user.fitnessGoal || "",
         activityLevel: user.activityLevel || "",
-        cuisines: user.cuisines || [],
+        cuisines: sanitizeCuisinePreferences(user.cuisines),
         allergies: user.allergies || [],
         weeklyBudget: user.weeklyBudget?.toString() || "",
         isRamadan: user.isRamadan ?? false,

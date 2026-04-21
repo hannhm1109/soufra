@@ -1,12 +1,10 @@
-const CACHE = "soufra-v1"
+const CACHE = "soufra-v2"
 const SHELL = [
-  "/",
-  "/dashboard",
   "/manifest.json",
   "/logo.png",
 ]
 
-// Install: cache the app shell
+// Install: cache only truly static, public assets — never auth-gated pages
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE).then((cache) => cache.addAll(SHELL))
@@ -24,7 +22,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim()
 })
 
-// Fetch: network-first for API/navigation, cache-first for static assets
+// Fetch: network-first for API/navigation, cache-first for static assets only
 self.addEventListener("fetch", (event) => {
   const { request } = event
   const url = new URL(request.url)
@@ -54,7 +52,14 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // Navigation + other: network-first, fall back to cache
+  // HTML navigation (pages): network-only — never cache server-rendered HTML
+  // because pages are auth-aware and must always reflect current session state
+  if (request.mode === "navigate" || request.headers.get("accept")?.includes("text/html")) {
+    event.respondWith(fetch(request))
+    return
+  }
+
+  // Everything else (images, fonts, manifests): network-first, cache fallback
   event.respondWith(
     fetch(request)
       .then((res) => {

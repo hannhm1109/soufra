@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { sanitizeCuisinePreferences } from "@/lib/cuisines"
 import { calculateCalories } from "@/lib/nutrition"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
@@ -15,6 +16,7 @@ export async function POST(req: Request) {
   const weight = Number.parseFloat(String(data.weight ?? ""))
   const height = Number.parseFloat(String(data.height ?? ""))
   const weeklyBudget = Number.parseFloat(String(data.weeklyBudget ?? ""))
+  const cuisines = sanitizeCuisinePreferences(data.cuisines)
 
   if (
     !Number.isFinite(age) ||
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
       marketTier: data.marketTier || "supermarket",
       fitnessGoal: data.fitnessGoal,
       activityLevel: data.activityLevel,
-      cuisines: data.cuisines,
+      cuisines,
       allergies: data.allergies,
       weeklyBudget,
       calorieTarget: calorieTarget ?? undefined,

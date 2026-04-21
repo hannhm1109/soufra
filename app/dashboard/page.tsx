@@ -5,6 +5,7 @@ import GenerateButton from "@/components/generate-button"
 import MealCard from "@/components/meal-card"
 import MobileMealPlanView from "@/components/mobile-meal-plan"
 import PrintMealPlanButton from "@/components/print-meal-plan-button"
+import { sanitizeCuisinePreferences } from "@/lib/cuisines"
 import Link from "next/link"
 import {
   Flame, Wallet, UtensilsCrossed,
@@ -18,7 +19,6 @@ const cuisineLabel: Record<string, string> = {
   moroccan:       "🇲🇦 Moroccan",
   mediterranean:  "🫒 Mediterranean",
   healthy:        "🥗 Healthy",
-  french:         "🇫🇷 French",
   middle_eastern: "🧆 Middle Eastern",
   italian:        "🇮🇹 Italian",
 }
@@ -85,6 +85,7 @@ export default async function DashboardPage() {
   const todayIndex    = getTodayIndex()
   const weekRange     = getWeekRange()
   const greeting      = getGreeting()
+  const preferredCuisines = sanitizeCuisinePreferences(user.cuisines)
 
   const days      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   const mealTypes = ["breakfast", "lunch", "dinner"]
@@ -111,9 +112,10 @@ export default async function DashboardPage() {
 
   // Nutrition averages
   const allSlots   = activePlan?.slots ?? []
-  const avgProtein = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.protein, 0) / 7)
-  const avgCarbs   = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.carbs,   0) / 7)
-  const avgFats    = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.fats,    0) / 7)
+  const daysInPlan = new Set(allSlots.map(s => s.dayOfWeek)).size || 1
+  const avgProtein = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.protein, 0) / daysInPlan)
+  const avgCarbs   = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.carbs,   0) / daysInPlan)
+  const avgFats    = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.fats,    0) / daysInPlan)
   const macroTotal = avgProtein + avgCarbs + avgFats || 1
 
   const budgetPct = activeGrocery && user.weeklyBudget
@@ -148,7 +150,7 @@ export default async function DashboardPage() {
             </span>
           )}
           {activePlan && <PrintMealPlanButton />}
-          <GenerateButton ratingCount={ratingCount} />
+          <GenerateButton ratingCount={ratingCount} hasActivePlan={!!activePlan} />
         </div>
       </div>
 
@@ -612,7 +614,7 @@ export default async function DashboardPage() {
               <div className="mt-4 pt-4 flex items-center justify-between" style={{ borderTop: "1px solid #F3F4F6" }}>
                 <span className="text-xs" style={{ color: "#9CA3AF" }}>Avg calories / day</span>
                 <span className="font-bold text-sm" style={{ color: "#2C3E50" }}>
-                  {Math.round(allSlots.reduce((s, sl) => s + sl.recipe.calories, 0) / 7)} kcal
+                  {Math.round(allSlots.reduce((s, sl) => s + sl.recipe.calories, 0) / daysInPlan)} kcal
                 </span>
               </div>
             </>
@@ -656,7 +658,7 @@ export default async function DashboardPage() {
             <div className="flex items-start justify-between gap-4">
               <span className="text-sm flex-shrink-0" style={{ color: "rgba(255,255,255,0.6)" }}>Cuisines</span>
               <div className="flex flex-wrap gap-1.5 justify-end">
-                {user.cuisines.map((c) => (
+                {preferredCuisines.map((c) => (
                   <span
                     key={c}
                     className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -701,7 +703,7 @@ export default async function DashboardPage() {
           <div className="pdf-stat-divider" />
           <div className="pdf-stat">
             <div className="pdf-stat-value">
-              {Math.round(activePlan.slots.reduce((s, sl) => s + sl.recipe.calories, 0) / 7)} kcal
+              {Math.round(activePlan.slots.reduce((s, sl) => s + sl.recipe.calories, 0) / daysInPlan)} kcal
             </div>
             <div className="pdf-stat-label">Avg / Day</div>
           </div>
