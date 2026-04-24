@@ -20,7 +20,6 @@ interface Recipe {
 
 const cuisineColors: Record<string, { bg: string; color: string }> = {
   moroccan:       { bg: "#FFF7F0", color: "#E67E22" },
-  french:         { bg: "#F0F7FF", color: "#3498DB" },
   mediterranean:  { bg: "#F0FFF4", color: "#27AE60" },
   middle_eastern: { bg: "#F5F3FF", color: "#6366F1" },
   healthy:        { bg: "#F0F7F7", color: "#2D5F5D" },

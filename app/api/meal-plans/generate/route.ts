@@ -13,6 +13,7 @@ import {
   toFiniteNumber,
 } from "@/lib/meal-generation"
 import { getWeeklyCuisineGuidanceBlock, requestMealJson } from "@/lib/meal-prompting"
+import { sanitizeCuisinePreferences } from "@/lib/cuisines"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
@@ -546,7 +547,7 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets): Valida
     }
 
     if ((meal.ingredients ?? []).some((ingredient) => !ingredientHasQuantity(ingredient))) {
-      soft.push(`${meal.name} has ingredients without quantities.`)
+      critical.push(`${meal.name} has ingredients without quantities.`)
     }
 
     const target = getMealTarget(meal.mealType, calorieTargets)
@@ -557,7 +558,7 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets): Valida
 
     const macroCalories = Math.round((meal.protein ?? 0) * 4 + (meal.carbs ?? 0) * 4 + (meal.fats ?? 0) * 9)
     if (Math.abs(macroCalories - (meal.calories ?? 0)) > 40) {
-      soft.push(`${meal.name} has calories that do not match its macros.`)
+      critical.push(`${meal.name} has calories that do not match its macros.`)
     }
 
     if (meal.mealType === "dinner" && meal.hasLeftovers) leftoverDinnerCount++
@@ -763,7 +764,8 @@ export async function POST() {
     dinner: Math.round(target * (isRamadan ? 0.2 : 0.35)),
   }
 
-  const selectedCuisines = user.cuisines.length > 0 ? user.cuisines : [DEFAULT_CUISINE]
+  const sanitized = sanitizeCuisinePreferences(user.cuisines)
+  const selectedCuisines = sanitized.length > 0 ? sanitized : [DEFAULT_CUISINE]
   const city = user.city ?? "Casablanca"
   const marketTier = (user.marketTier ?? "supermarket") as MarketTierValue
   const budgetAssessment = assessBudgetFeasibility({
@@ -821,7 +823,7 @@ export async function POST() {
     syncLeftoverFlags(meals)
 
     let validation = validateMeals(meals, calorieTargets)
-    for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS && (validation.critical.length > 0 || validation.soft.length > 0); attempt++) {
+    for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS && validation.critical.length > 0; attempt++) {
       const allIssues = [...validation.critical, ...validation.soft]
       const repairedMeals = await repairMeals({ meals, issues: allIssues, basePrompt: prompt })
       meals = repairedMeals.map((meal) => normalizeMeal(meal, calorieTargets))

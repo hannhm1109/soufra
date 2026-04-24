@@ -4,12 +4,11 @@ import Link from "next/link"
 import { Calendar, ChevronDown, ChevronUp, Sunrise, Sun, Moon, Flame } from "lucide-react"
 
 const cuisineEmojis: Record<string, string> = {
-  moroccan: "🇲🇦",
-  french: "🇫🇷",
-  italian: "🇮🇹",
-  mediterranean: "🫒",
+  moroccan:       "🇲🇦",
+  mediterranean:  "🫒",
+  healthy:        "🥗",
   middle_eastern: "🧆",
-  healthy: "🥗",
+  italian:        "🇮🇹",
 }
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]

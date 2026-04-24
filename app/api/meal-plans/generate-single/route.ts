@@ -15,11 +15,10 @@ import { getSingleCuisineGuide, requestMealJson } from "@/lib/meal-prompting"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-const CALORIE_SPLIT: Record<string, number> = {
-  breakfast: 0.25,
-  lunch: 0.4,
-  dinner: 0.35,
-}
+const CALORIE_SPLIT = {
+  normal:  { breakfast: 0.25, lunch: 0.4,  dinner: 0.35 },
+  ramadan: { breakfast: 0.3,  lunch: 0.5,  dinner: 0.2  },
+} as const
 
 const MAX_REPAIR_ATTEMPTS = 2
 
@@ -315,7 +314,10 @@ export async function POST(req: Request) {
   }
 
   const calorieTarget = user.calorieTarget ?? 2000
-  const mealCalories = Math.round(calorieTarget * (CALORIE_SPLIT[slot.mealType] ?? 0.33))
+  const isRamadan = user.isRamadan ?? false
+  const splits = isRamadan ? CALORIE_SPLIT.ramadan : CALORIE_SPLIT.normal
+  const mealType = slot.mealType as keyof typeof splits
+  const mealCalories = Math.round(calorieTarget * (splits[mealType] ?? 0.33))
   const cuisine = slot.recipe.cuisine
   const city = user.city ?? "Casablanca"
   const marketTier = (user.marketTier ?? "supermarket") as MarketTierValue

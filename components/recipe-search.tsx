@@ -25,21 +25,19 @@ interface Props {
 }
 
 const cuisineEmojis: Record<string, string> = {
-  moroccan: "🇲🇦",
-  french: "🇫🇷",
-  italian: "🇮🇹",
-  mediterranean: "🫒",
+  moroccan:       "🇲🇦",
+  mediterranean:  "🫒",
+  healthy:        "🥗",
   middle_eastern: "🧆",
-  healthy: "🥗",
+  italian:        "🇮🇹",
 }
 
 const cuisineColors: Record<string, { bg: string; color: string }> = {
-  moroccan: { bg: "#FFF7F0", color: "#E67E22" },
-  french: { bg: "#F0F7FF", color: "#3498DB" },
-  italian: { bg: "#FFF0F0", color: "#E74C3C" },
-  mediterranean: { bg: "#F0FFF4", color: "#27AE60" },
+  moroccan:       { bg: "#FFF7F0", color: "#E67E22" },
+  mediterranean:  { bg: "#F0FFF4", color: "#27AE60" },
   middle_eastern: { bg: "#FFF9F0", color: "#D4A574" },
-  healthy: { bg: "#F0F7F7", color: "#2D5F5D" },
+  healthy:        { bg: "#F0F7F7", color: "#2D5F5D" },
+  italian:        { bg: "#FFF0F0", color: "#E74C3C" },
 }
 
 const difficultyColors: Record<string, { bg: string; color: string }> = {
