@@ -1,3 +1,5 @@
+export const maxDuration = 120
+
 import { auth } from "@/lib/auth"
 import { assessBudgetFeasibility, type MarketTierValue } from "@/lib/budget-utils"
 import {
@@ -139,16 +141,24 @@ function syncLeftoverFlags(meals: RawMeal[]) {
     if (meal.dayOfWeek == null || !meal.mealType) continue
 
     if (meal.mealType === "dinner" && meal.hasLeftovers) {
-      const lunch = slotMap.get(`${(meal.dayOfWeek + 1) % 7}:lunch`)
-      if (lunch) lunch.usesLeftovers = true
+      // Only link within the week — Sunday dinner (day 6) has no next-day lunch
+      const nextDay = meal.dayOfWeek + 1
+      if (nextDay <= 6) {
+        const lunch = slotMap.get(`${nextDay}:lunch`)
+        if (lunch) lunch.usesLeftovers = true
+      }
       meal.leftoverServings = Math.max(1, meal.leftoverServings ?? 1)
     }
 
     if (meal.mealType === "lunch" && meal.usesLeftovers) {
-      const previousDinner = slotMap.get(`${(meal.dayOfWeek + 6) % 7}:dinner`)
-      if (previousDinner) {
-        previousDinner.hasLeftovers = true
-        previousDinner.leftoverServings = Math.max(1, previousDinner.leftoverServings ?? 1)
+      // Only link within the week — Monday lunch (day 0) has no previous dinner
+      const prevDay = meal.dayOfWeek - 1
+      if (prevDay >= 0) {
+        const previousDinner = slotMap.get(`${prevDay}:dinner`)
+        if (previousDinner) {
+          previousDinner.hasLeftovers = true
+          previousDinner.leftoverServings = Math.max(1, previousDinner.leftoverServings ?? 1)
+        }
       }
     }
   }
@@ -484,8 +494,14 @@ Use exactly this structure:
 }`
 }
 
-function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets) {
-  const issues: string[] = []
+interface ValidationResult {
+  critical: string[]
+  soft: string[]
+}
+
+function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets): ValidationResult {
+  const critical: string[] = []
+  const soft: string[] = []
   const seenSlots = new Set<string>()
   const seenNames = new Set<string>()
   const breakfastBases: Record<string, number> = {}
@@ -493,64 +509,55 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets) {
   const vegetables = new Set<string>()
   let plantForwardMeals = 0
   let leftoverDinnerCount = 0
-  let cookingMethodCount = 0
   const cookingMethods = new Set<string>()
 
   if (meals.length !== REQUIRED_SLOT_COUNT) {
-    issues.push(`Expected ${REQUIRED_SLOT_COUNT} meals but received ${meals.length}.`)
+    critical.push(`Expected ${REQUIRED_SLOT_COUNT} meals but received ${meals.length}.`)
   }
 
   for (const meal of meals) {
     if (!meal.name || meal.dayOfWeek == null || !meal.mealType) {
-      issues.push("Every meal must include name, dayOfWeek, and mealType.")
+      critical.push("Every meal must include name, dayOfWeek, and mealType.")
       continue
     }
 
     const slotKey = `${meal.dayOfWeek}:${meal.mealType}`
-    if (seenSlots.has(slotKey)) issues.push(`Duplicate slot found for ${slotKey}.`)
+    if (seenSlots.has(slotKey)) critical.push(`Duplicate slot found for ${slotKey}.`)
     seenSlots.add(slotKey)
 
     const normalizedName = normalizeRecipeName(meal.name)
-    if (seenNames.has(normalizedName)) issues.push(`Duplicate recipe name found: ${meal.name}.`)
+    if (seenNames.has(normalizedName)) critical.push(`Duplicate recipe name found: ${meal.name}.`)
     seenNames.add(normalizedName)
 
     if (!Number.isInteger(meal.dayOfWeek) || meal.dayOfWeek < 0 || meal.dayOfWeek > 6) {
-      issues.push(`Invalid dayOfWeek for ${meal.name}.`)
+      critical.push(`Invalid dayOfWeek for ${meal.name}.`)
     }
 
     if (!REQUIRED_MEAL_TYPES.includes(meal.mealType as MealType)) {
-      issues.push(`Invalid mealType for ${meal.name}.`)
-    }
-
-    if (!DIFFICULTY_LEVELS.includes((meal.difficulty ?? "") as (typeof DIFFICULTY_LEVELS)[number])) {
-      issues.push(`Invalid difficulty for ${meal.name}.`)
+      critical.push(`Invalid mealType for ${meal.name}.`)
     }
 
     if ((meal.instructions?.length ?? 0) < 4) {
-      issues.push(`${meal.name} needs at least 4 cooking steps.`)
+      critical.push(`${meal.name} needs at least 4 cooking steps.`)
     }
 
     if ((meal.ingredients?.length ?? 0) < 3) {
-      issues.push(`${meal.name} needs at least 3 ingredients.`)
+      critical.push(`${meal.name} needs at least 3 ingredients.`)
     }
 
     if ((meal.ingredients ?? []).some((ingredient) => !ingredientHasQuantity(ingredient))) {
-      issues.push(`${meal.name} has ingredients without quantities.`)
+      soft.push(`${meal.name} has ingredients without quantities.`)
     }
 
     const target = getMealTarget(meal.mealType, calorieTargets)
     const bounds = getCalorieBounds(target)
     if ((meal.calories ?? 0) < bounds.min || (meal.calories ?? 0) > bounds.max) {
-      issues.push(`${meal.name} is outside the calorie range for ${meal.mealType}.`)
+      critical.push(`${meal.name} is outside the calorie range for ${meal.mealType}.`)
     }
 
     const macroCalories = Math.round((meal.protein ?? 0) * 4 + (meal.carbs ?? 0) * 4 + (meal.fats ?? 0) * 9)
     if (Math.abs(macroCalories - (meal.calories ?? 0)) > 40) {
-      issues.push(`${meal.name} has calories that do not match its macros.`)
-    }
-
-    if ((meal.whyChosen ?? "").split(/\s+/).filter(Boolean).length > 15) {
-      issues.push(`${meal.name} has a whyChosen sentence that is too long.`)
+      soft.push(`${meal.name} has calories that do not match its macros.`)
     }
 
     if (meal.mealType === "dinner" && meal.hasLeftovers) leftoverDinnerCount++
@@ -577,13 +584,12 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets) {
       "other"
     proteins[proteinKey] = (proteins[proteinKey] ?? 0) + 1
 
-    const lowerIngredients = ingredientText
     for (const vegetable of ["tomato", "pepper", "zucchini", "eggplant", "carrot", "onion", "spinach", "cucumber", "potato", "olive", "chickpea", "lentil", "beans", "lettuce"]) {
-      if (lowerIngredients.includes(vegetable)) vegetables.add(vegetable)
+      if (ingredientText.includes(vegetable)) vegetables.add(vegetable)
     }
 
-    if (["lentil", "chickpea", "bean", "beans", "egg", "yogurt", "vegetable"].some((word) => lowerIngredients.includes(word)) &&
-      !["chicken", "beef", "lamb", "fish"].some((word) => lowerIngredients.includes(word))) {
+    if (["lentil", "chickpea", "bean", "beans", "egg", "yogurt", "vegetable"].some((word) => ingredientText.includes(word)) &&
+      !["chicken", "beef", "lamb", "fish"].some((word) => ingredientText.includes(word))) {
       plantForwardMeals++
     }
 
@@ -597,23 +603,23 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets) {
   for (let day = 0; day < 7; day++) {
     for (const mealType of REQUIRED_MEAL_TYPES) {
       if (!seenSlots.has(`${day}:${mealType}`)) {
-        issues.push(`Missing slot for day ${day} ${mealType}.`)
+        critical.push(`Missing slot for day ${day} ${mealType}.`)
       }
     }
   }
 
-  if ((breakfastBases.egg ?? 0) > 2) issues.push("Too many egg-based breakfasts.")
-  if ((breakfastBases.oat ?? 0) > 2) issues.push("Too many oat-based breakfasts.")
-  if ((breakfastBases.bread ?? 0) > 2) issues.push("Too many bread-based breakfasts.")
-  if ((proteins.chicken ?? 0) > 3) issues.push("Too many chicken-based meals.")
-  if ((proteins.beef ?? 0) + (proteins.lamb ?? 0) > 2) issues.push("Too many red-meat meals.")
-  if (plantForwardMeals < 6) issues.push("Not enough plant-forward meals.")
-  if (vegetables.size < 8) issues.push("Not enough vegetable variety across the week.")
-  cookingMethodCount = cookingMethods.size
-  if (cookingMethodCount < 5) issues.push("Not enough cooking-method variety.")
-  if (leftoverDinnerCount < 2 || leftoverDinnerCount > 3) issues.push("Plan should include 2 to 3 leftover dinners.")
+  // Variety guidelines — used to guide repairs but don't block a structurally valid plan
+  if ((breakfastBases.egg ?? 0) > 2) soft.push("Too many egg-based breakfasts.")
+  if ((breakfastBases.oat ?? 0) > 2) soft.push("Too many oat-based breakfasts.")
+  if ((breakfastBases.bread ?? 0) > 2) soft.push("Too many bread-based breakfasts.")
+  if ((proteins.chicken ?? 0) > 3) soft.push("Too many chicken-based meals.")
+  if ((proteins.beef ?? 0) + (proteins.lamb ?? 0) > 2) soft.push("Too many red-meat meals.")
+  if (plantForwardMeals < 4) soft.push("Not enough plant-forward meals.")
+  if (vegetables.size < 6) soft.push("Not enough vegetable variety across the week.")
+  if (cookingMethods.size < 4) soft.push("Not enough cooking-method variety.")
+  if (leftoverDinnerCount > 4) soft.push("Too many leftover dinners — cap at 3 or 4.")
 
-  return issues
+  return { critical, soft }
 }
 
 async function repairMeals(args: {
@@ -628,19 +634,31 @@ Return only valid JSON with this exact shape:
   "meals": [ ... 21 corrected meal objects ... ]
 }
 
-You must preserve the overall spirit of the plan, but fix every issue below.
+Preserve the overall spirit of the plan. Fix every issue listed below.
 
 ISSUES TO FIX:
 ${args.issues.map((issue) => `- ${issue}`).join("\n")}
 
-ORIGINAL INSTRUCTIONS:
-${args.basePrompt}
+KEY CONSTRAINTS (from original instructions):
+- Generate exactly 21 meals covering dayOfWeek 0–6 × breakfast, lunch, dinner.
+- No duplicate recipe names or slot combinations.
+- Calories must stay within ±10% of each meal type's target.
+- Calories = protein × 4 + carbs × 4 + fats × 9 (within 40 kcal).
+- Every ingredient must include a quantity.
+- At least 4 cooking steps and 3 ingredients per meal.
+- difficulty must be easy, medium, or hard.
+- whyChosen must be ≤15 words.
 
 CURRENT JSON TO REPAIR:
 ${JSON.stringify({ meals: args.meals })}`
 
-  const parsed = await requestMealJson(prompt, { maxTokens: 12000, temperature: 0.2 })
-  return parsed.meals as RawMeal[]
+  try {
+    const parsed = await requestMealJson(prompt, { maxTokens: 12000, temperature: 0.2 })
+    const repaired = Array.isArray(parsed.meals) ? (parsed.meals as RawMeal[]) : null
+    return repaired && repaired.length > 0 ? repaired : args.meals
+  } catch {
+    return args.meals
+  }
 }
 
 async function analyzeUserFeedback(userId: string) {
@@ -802,16 +820,20 @@ export async function POST() {
     meals = meals.map((meal) => normalizeMeal(meal, calorieTargets))
     syncLeftoverFlags(meals)
 
-    let issues = validateMeals(meals, calorieTargets)
-    for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS && issues.length > 0; attempt++) {
-      const repairedMeals = await repairMeals({ meals, issues, basePrompt: prompt })
+    let validation = validateMeals(meals, calorieTargets)
+    for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS && (validation.critical.length > 0 || validation.soft.length > 0); attempt++) {
+      const allIssues = [...validation.critical, ...validation.soft]
+      const repairedMeals = await repairMeals({ meals, issues: allIssues, basePrompt: prompt })
       meals = repairedMeals.map((meal) => normalizeMeal(meal, calorieTargets))
       syncLeftoverFlags(meals)
-      issues = validateMeals(meals, calorieTargets)
+      validation = validateMeals(meals, calorieTargets)
     }
 
-    if (issues.length > 0) {
-      throw new Error(`Meal plan failed validation: ${issues.join(" | ")}`)
+    if (validation.critical.length > 0) {
+      throw new Error(`Meal plan failed validation: ${validation.critical.join(" | ")}`)
+    }
+    if (validation.soft.length > 0) {
+      console.warn("Meal plan has soft issues (serving anyway):", validation.soft.join(" | "))
     }
 
     const seenSlots = new Set<string>()

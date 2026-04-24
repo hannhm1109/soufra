@@ -64,10 +64,14 @@ export function reconcileNutrition(meal: MacroFields, target: number) {
 
   let calories = Math.round(protein * 4 + carbs * 4 + fats * 9)
   if (calories <= 0) {
-    meal.calories = target
-    meal.protein = 20
-    meal.carbs = 40
-    meal.fats = 10
+    // Scale sensible default macro ratios to match the target
+    const base = { p: 20, c: 40, f: 10 }
+    const baseCal = base.p * 4 + base.c * 4 + base.f * 9 // 330
+    const scale = target / baseCal
+    meal.protein = round1(base.p * scale)
+    meal.carbs = round1(base.c * scale)
+    meal.fats = round1(base.f * scale)
+    meal.calories = Math.round(meal.protein * 4 + meal.carbs * 4 + meal.fats * 9)
     return
   }
 

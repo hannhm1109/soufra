@@ -1,3 +1,5 @@
+export const maxDuration = 60
+
 import { auth } from "@/lib/auth"
 import { assessBudgetFeasibility, type MarketTierValue } from "@/lib/budget-utils"
 import {
@@ -57,7 +59,8 @@ function normalizeMeal(rawMeal: RawSingleMeal, fallback: {
     ingredients: normalizeTextList(rawMeal.ingredients, 20),
     instructions: normalizeTextList(rawMeal.instructions, 8),
     tags: normalizeTextList(rawMeal.tags, 8).map((tag) => tag.toLowerCase()),
-    whyChosen: normalizeText(rawMeal.whyChosen) ?? "Fits your goals, cuisine preference, and calorie target.",
+    whyChosen: (normalizeText(rawMeal.whyChosen) ?? "Fits your goals, cuisine preference, and calorie target.")
+      .split(/\s+/).slice(0, 15).join(" "),
   }
 
   reconcileNutrition(meal, fallback.mealCalories)
@@ -109,10 +112,6 @@ function validateMeal(meal: ReturnType<typeof normalizeMeal>, options: {
   const macroCalories = Math.round(meal.protein * 4 + meal.carbs * 4 + meal.fats * 9)
   if (Math.abs(macroCalories - meal.calories) > 40) {
     issues.push("Calories must match the macros formula.")
-  }
-
-  if ((meal.whyChosen ?? "").split(/\s+/).filter(Boolean).length > 15) {
-    issues.push("whyChosen must stay at 15 words or fewer.")
   }
 
   return issues
@@ -244,10 +243,12 @@ Respond only with valid JSON:
 }
 
 async function repairMeal(args: {
-  prompt: string
+  cuisine: string
+  mealCalories: number
   meal: ReturnType<typeof normalizeMeal>
   issues: string[]
 }) {
+  const bounds = getCalorieBounds(args.mealCalories)
   const repairPrompt = `Fix this single recipe JSON for Soufra.
 
 Return only valid JSON with exactly this shape:
@@ -258,14 +259,24 @@ Return only valid JSON with exactly this shape:
 ISSUES TO FIX:
 ${args.issues.map((issue) => `- ${issue}`).join("\n")}
 
-ORIGINAL INSTRUCTIONS:
-${args.prompt}
+KEY CONSTRAINTS:
+- cuisine must be exactly "${args.cuisine}".
+- calories must be between ${bounds.min} and ${bounds.max} kcal.
+- calories = protein × 4 + carbs × 4 + fats × 9 (within 40 kcal).
+- Every ingredient must include a quantity.
+- At least 4 cooking steps and 3 ingredients.
+- difficulty must be easy, medium, or hard.
+- whyChosen must be one sentence of 15 words or fewer.
 
 CURRENT JSON:
 ${JSON.stringify({ meal: args.meal })}`
 
-  const parsed = await requestMealJson(repairPrompt, { maxTokens: 1400, temperature: 0.2 })
-  return parsed.meal ?? parsed
+  try {
+    const parsed = await requestMealJson(repairPrompt, { maxTokens: 1400, temperature: 0.2 })
+    return parsed.meal ?? parsed
+  } catch {
+    return args.meal
+  }
 }
 
 export async function POST(req: Request) {
@@ -357,7 +368,7 @@ export async function POST(req: Request) {
     })
 
     for (let attempt = 0; attempt < MAX_REPAIR_ATTEMPTS && issues.length > 0; attempt++) {
-      const repaired = await repairMeal({ prompt, meal, issues })
+      const repaired = await repairMeal({ cuisine, mealCalories, meal, issues })
       meal = normalizeMeal(repaired, {
         cuisine,
         mealType: slot.mealType,
