@@ -6,6 +6,8 @@ import {
   assessBudgetFeasibility,
   getConfidenceLabel,
 } from "@/lib/budget-utils"
+import { resolvePriceBatch } from "@/lib/pricing/resolve"
+import type { ResolutionMethod } from "@/lib/pricing/types"
 
 export type { MarketTierValue, BudgetAssessment }
 export { assessBudgetFeasibility, getConfidenceLabel }
@@ -230,40 +232,37 @@ function buildCuratedCatalog(tier: MarketTierValue): CatalogEntry[] {
   }))
 }
 
-function selectBestSnapshot(
-  snapshots: Array<{
-    city: string | null
-    tier: string
-    referencePriceMad: number
-    lowPriceMad: number | null
-    highPriceMad: number | null
-    confidence: number
-  }>,
-  city: string | null,
-  tier: MarketTierValue
-) {
-  const exactCity = city ? snapshots.find((snapshot) => snapshot.tier === tier && snapshot.city === city) : null
-  const national = snapshots.find((snapshot) => snapshot.tier === tier && snapshot.city === null)
-  return exactCity ?? national ?? null
-}
 
 async function getDatabaseCatalog(city: string | null, tier: MarketTierValue): Promise<CatalogEntry[]> {
+  // Load ingredient metadata (names, aliases, units) — no price data here
   const ingredients = await prisma.ingredient.findMany({
-    include: {
-      aliases: true,
-      priceSnapshots: {
-        orderBy: { computedAt: "desc" },
-      },
-    },
+    include: { aliases: true },
   })
 
+  if (ingredients.length === 0) return buildCuratedCatalog(tier)
+
+  // Delegate ALL price resolution to resolvePriceBatch.
+  // It checks (in priority order): PriceSnapshot → IngredientPriceSnapshot → BaselineIngredientPrice
+  const resolvedPrices = await resolvePriceBatch(
+    ingredients.map((i) => ({ id: i.id, slug: i.slug, defaultUnit: i.defaultUnit })),
+    tier,
+    city
+  )
+
   return ingredients.map((ingredient) => {
-    const snapshot = selectBestSnapshot(ingredient.priceSnapshots, city, tier)
-    const fallback = (curatedCatalog as CuratedIngredient[]).find((item) => item.slug === ingredient.slug)
-    const referencePriceMad = snapshot?.referencePriceMad ?? fallback?.tierPrices[tier] ?? 10
-    const lowPriceMad = snapshot?.lowPriceMad ?? fallback?.tierPrices.souk ?? referencePriceMad
-    const highPriceMad = snapshot?.highPriceMad ?? fallback?.tierPrices.premium ?? referencePriceMad
-    const confidence = snapshot?.confidence ?? (fallback ? 0.72 : 0.45)
+    const resolved = resolvedPrices.get(ingredient.id)
+    const fallback = (curatedCatalog as CuratedIngredient[]).find(
+      (item) => item.slug === ingredient.slug
+    )
+
+    const referencePriceMad = resolved?.unitPrice ?? fallback?.tierPrices[tier] ?? 10
+    const lowPriceMad = fallback?.tierPrices.souk ?? Math.round(referencePriceMad * 0.85 * 10) / 10
+    const highPriceMad = fallback?.tierPrices.premium ?? Math.round(referencePriceMad * 1.15 * 10) / 10
+    const confidence = resolved?.confidenceScore ?? (fallback ? 0.72 : 0.45)
+    const sourceName = resolved
+      ? (resolved.storeName ?? resolutionLabel(resolved.resolutionMethod, resolved.source))
+      : "Soufra curated Moroccan market baseline"
+    const sourceType: PriceSourceValue = resolved?.legacySource ?? "curated"
 
     return {
       ingredientId: ingredient.id,
@@ -274,16 +273,27 @@ async function getDatabaseCatalog(city: string | null, tier: MarketTierValue): P
       aliases: [
         normalizeText(ingredient.name),
         normalizeText(ingredient.slug),
-        ...ingredient.aliases.map((alias) => normalizeText(alias.alias)),
+        ...ingredient.aliases.map((a) => normalizeText(a.alias)),
       ],
       referencePriceMad,
       lowPriceMad,
       highPriceMad,
       confidence,
-      sourceName: snapshot ? "Soufra price snapshots" : "Soufra curated Moroccan market baseline",
-      sourceType: snapshot ? "admin" : "curated",
+      sourceName,
+      sourceType,
     } satisfies CatalogEntry
   })
+}
+
+function resolutionLabel(method: ResolutionMethod, source?: string): string {
+  if (method === "exact_snapshot") {
+    if (source === "aswak_shop" || source === "aswak_catalog_pdf") return "Recent store prices"
+    if (source === "receipt") return "Recent receipt prices"
+    return "Recent store prices"
+  }
+  if (method === "recent_receipt_avg") return "Recent receipt prices"
+  if (method === "baseline") return "Soufra price snapshots"
+  return "Soufra curated Moroccan market baseline"
 }
 
 export async function getPriceCatalog(city: string | null, tier: MarketTierValue): Promise<CatalogEntry[]> {

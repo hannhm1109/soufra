@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { parseQuantity, UNIT_NORMALIZE } from "@/lib/pricing/normalize"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
 
@@ -114,6 +115,7 @@ Rules:
   let pricesLearned = 0
   const marketTier = user.marketTier ?? "supermarket"
   const city = user.city ?? "Casablanca"
+  const purchasedAt = new Date()
 
   for (const receiptItem of receipt.items) {
     if (!receiptItem.priceMad || !receiptItem.normalizedName) continue
@@ -136,7 +138,7 @@ Rules:
         data: { ingredientId: ingredient.id },
       })
 
-      // Save as a price point
+      // Legacy price point (kept for backward compatibility)
       await prisma.pricePoint.create({
         data: {
           ingredientId: ingredient.id,
@@ -147,7 +149,53 @@ Rules:
           unit: receiptItem.unit ?? ingredient.defaultUnit,
           priceMad: receiptItem.priceMad,
           confidence: 0.85,
-          capturedAt: new Date(),
+          capturedAt: purchasedAt,
+        },
+      })
+
+      // Parse quantity so the resolver can derive unitPrice
+      const parsedQty = receiptItem.quantityText ? parseQuantity(receiptItem.quantityText) : null
+      const qtyValue = parsedQty?.value ?? null
+      const qtyUnit = parsedQty?.unit
+        ? (UNIT_NORMALIZE[parsedQty.unit] ?? parsedQty.unit)
+        : (receiptItem.unit ?? null)
+
+      // New: write a PriceSnapshot so the v2 resolver picks up this receipt price
+      await prisma.priceSnapshot.create({
+        data: {
+          ingredientId: ingredient.id,
+          source: "receipt",
+          city,
+          marketTier: marketTier as "souk" | "supermarket" | "premium",
+          packagePrice: receiptItem.priceMad,
+          packageQuantityValue: qtyValue,
+          packageQuantityUnit: qtyUnit,
+          // unitPrice is derived by the resolver from packagePrice / packageQty
+          isPromo: false,
+          inStock: true,
+          confidenceLevel: "medium",
+          confidenceScore: 0.82,
+          capturedAt: purchasedAt,
+          // Expires after 60 days — receipt data goes stale
+          expiresAt: new Date(purchasedAt.getTime() + 60 * 24 * 60 * 60 * 1000),
+          metadata: { storeName: parsed.storeName ?? null },
+        },
+      })
+
+      // New: structured receipt line for future receipt-average resolution
+      await prisma.receiptLinePrice.create({
+        data: {
+          receiptId: receipt.id,
+          ingredientId: ingredient.id,
+          rawName: receiptItem.rawName,
+          normalizedName: receiptItem.normalizedName,
+          quantityValue: qtyValue,
+          quantityUnit: qtyUnit,
+          totalPrice: receiptItem.priceMad,
+          city,
+          marketTier: marketTier as "souk" | "supermarket" | "premium",
+          purchasedAt,
+          confidenceScore: 0.82,
         },
       })
 

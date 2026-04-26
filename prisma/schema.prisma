@@ -153,11 +153,16 @@ model Ingredient {
   carbsPer100g      Float?
   fatsPer100g       Float?
   isSeasonal        Boolean                   @default(false)
+  isActive          Boolean                   @default(true)
   aliases           IngredientAlias[]
   pricePoints       PricePoint[]
   priceSnapshots    IngredientPriceSnapshot[]
   groceryItems      GroceryItem[]
   receiptItems      ReceiptItem[]
+  productMatches    ProductIngredientMatch[]
+  catalogSnapshots  PriceSnapshot[]
+  baselinePrices    BaselineIngredientPrice[]
+  receiptLinePrices ReceiptLinePrice[]
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
 }
@@ -210,18 +215,19 @@ model IngredientPriceSnapshot {
 }
 
 model Receipt {
-  id           String         @id @default(cuid())
-  userId       String
-  storeName    String?
-  city         String?
-  totalMad     Float?
-  purchasedAt  DateTime?
-  imageUrl     String?
-  rawText      String?
-  status       ReceiptStatus  @default(processing)
-  items        ReceiptItem[]
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt    DateTime       @default(now())
+  id               String            @id @default(cuid())
+  userId           String
+  storeName        String?
+  city             String?
+  totalMad         Float?
+  purchasedAt      DateTime?
+  imageUrl         String?
+  rawText          String?
+  status           ReceiptStatus     @default(processing)
+  items            ReceiptItem[]
+  receiptLinePrices ReceiptLinePrice[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime          @default(now())
 
   @@index([userId, createdAt])
 }
@@ -260,4 +266,163 @@ enum ReceiptStatus {
   processing
   reviewed
   failed
+}
+
+// ─── Pricing system v2 enums ───────────────────────────────────────────────
+
+enum CatalogSource {
+  aswak_shop
+  aswak_catalog_pdf
+  receipt
+  baseline
+}
+
+enum MatchType {
+  exact
+  alias
+  fuzzy
+  manual
+  category_fallback
+}
+
+enum ConfidenceLevel {
+  high
+  medium
+  low
+}
+
+enum ResolutionMethod {
+  exact_snapshot
+  recent_receipt_avg
+  baseline
+  category_fallback
+}
+
+// ─── Pricing system v2 models ──────────────────────────────────────────────
+
+// Normalized store product scraped from a catalog source (e.g., Aswak Assalam)
+model SourceCatalogProduct {
+  id             String                   @id @default(cuid())
+  source         CatalogSource
+  externalId     String?
+  sourceUrl      String?
+  rawName        String
+  normalizedName String
+  brand          String?
+  category       String?
+  packLabel      String?
+  quantityValue  Float?
+  quantityUnit   String?
+  city           String?
+  metadata       Json                     @default("{}")
+  firstSeenAt    DateTime                 @default(now())
+  lastSeenAt     DateTime                 @default(now())
+  matches        ProductIngredientMatch[]
+  snapshots      PriceSnapshot[]
+
+  @@index([source, normalizedName])
+  @@index([lastSeenAt])
+}
+
+// Link between a store product and an internal ingredient key
+model ProductIngredientMatch {
+  id                     String               @id @default(cuid())
+  sourceCatalogProductId String
+  ingredientId           String
+  matchType              MatchType
+  confidenceScore        Decimal              @db.Decimal(4, 3)
+  isManualOverride       Boolean              @default(false)
+  notes                  String?
+  createdAt              DateTime             @default(now())
+  sourceCatalogProduct   SourceCatalogProduct @relation(fields: [sourceCatalogProductId], references: [id], onDelete: Cascade)
+  ingredient             Ingredient           @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceCatalogProductId, ingredientId])
+  @@index([ingredientId])
+}
+
+// Timestamped price observation per product/ingredient from any source
+model PriceSnapshot {
+  id                     String                @id @default(cuid())
+  ingredientId           String?
+  sourceCatalogProductId String?
+  source                 CatalogSource
+  city                   String?
+  marketTier             MarketTier?
+  currency               String                @default("MAD")
+  packagePrice           Decimal               @db.Decimal(8, 2)
+  packageQuantityValue   Float?
+  packageQuantityUnit    String?
+  unitPrice              Decimal?              @db.Decimal(10, 4)
+  unitBaseQuantity       Float?
+  unitBaseUnit           String?
+  isPromo                Boolean               @default(false)
+  inStock                Boolean?
+  confidenceLevel        ConfidenceLevel
+  confidenceScore        Decimal               @db.Decimal(4, 3)
+  capturedAt             DateTime
+  expiresAt              DateTime?
+  metadata               Json                  @default("{}")
+  ingredient             Ingredient?           @relation(fields: [ingredientId], references: [id])
+  sourceCatalogProduct   SourceCatalogProduct? @relation(fields: [sourceCatalogProductId], references: [id])
+
+  @@index([ingredientId, capturedAt])
+  @@index([source, city, capturedAt])
+}
+
+// DB-backed fallback price per ingredient × tier (replaces JSON-only baseline)
+// city defaults to "national" for country-wide prices
+model BaselineIngredientPrice {
+  id              String          @id @default(cuid())
+  ingredientId    String
+  marketTier      MarketTier
+  city            String          @default("national")
+  unitPrice       Decimal         @db.Decimal(8, 2)
+  unit            String
+  confidenceLevel ConfidenceLevel @default(low)
+  notes           String?
+  updatedAt       DateTime        @updatedAt
+  ingredient      Ingredient      @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@unique([ingredientId, marketTier, city])
+  @@index([ingredientId])
+}
+
+// Structured receipt line items with quantity + unit parsed out
+model ReceiptLinePrice {
+  id              String      @id @default(cuid())
+  receiptId       String
+  ingredientId    String?
+  rawName         String
+  normalizedName  String?
+  quantityValue   Float?
+  quantityUnit    String?
+  totalPrice      Decimal?    @db.Decimal(8, 2)
+  unitPrice       Decimal?    @db.Decimal(10, 4)
+  city            String?
+  marketTier      MarketTier?
+  purchasedAt     DateTime
+  confidenceScore Decimal?    @db.Decimal(4, 3)
+  receipt         Receipt     @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  ingredient      Ingredient? @relation(fields: [ingredientId], references: [id])
+
+  @@index([receiptId])
+  @@index([ingredientId, purchasedAt])
+}
+
+// Audit trail: why was a specific price chosen for a grocery item?
+model PriceResolutionLog {
+  id                String           @id @default(cuid())
+  groceryListId     String?
+  groceryListItemId String?
+  ingredientId      String?
+  chosenSource      String?
+  chosenSnapshotId  String?
+  resolutionMethod  ResolutionMethod
+  confidenceLevel   ConfidenceLevel
+  explanation       String
+  createdAt         DateTime         @default(now())
+
+  @@index([groceryListId])
+  @@index([ingredientId, createdAt])
 }
