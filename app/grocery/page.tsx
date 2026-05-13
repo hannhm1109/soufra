@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth"
 import { getConfidenceLabel } from "@/lib/pricing"
 import { prisma } from "@/lib/prisma"
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
@@ -93,17 +92,7 @@ export default async function GroceryPage() {
             {groceryList && <PrintGroceryButton />}
             {/* visual divider between utility actions and primary CTA */}
             <div className="w-px h-6 self-center mx-1" style={{ backgroundColor: "#E5E7EB" }} />
-            {groceryList ? (
-              <GenerateGroceryButton />
-            ) : (
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:shadow-md"
-                style={{ backgroundColor: "#2D5F5D" }}
-              >
-                Go generate a meal plan
-              </Link>
-            )}
+            <GenerateGroceryButton />
           </div>
         </div>
 
@@ -219,15 +208,8 @@ export default async function GroceryPage() {
               No grocery list yet
             </h3>
             <p className="mb-6" style={{ color: "#6B7280" }}>
-              Generate a meal plan first, then create your grocery list
+              Click the button above to generate your grocery list from your current meal plan
             </p>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white transition-all hover:shadow-md"
-              style={{ backgroundColor: "#2D5F5D" }}
-            >
-              Go generate a meal plan
-            </Link>
           </div>
         )}
       </div>

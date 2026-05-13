@@ -12,6 +12,7 @@
 // because it falls back to existing snapshots and the baseline catalog.
 
 import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 import { aswakAdapter } from "@/lib/pricing/sources/aswak"
 import { seedBaselinePrices } from "@/lib/pricing/sources/baseline"
 import { ingestAdapter, pruneStaleSnapshots } from "@/lib/pricing/ingest"
@@ -86,13 +87,32 @@ export async function GET(req: Request) {
     results.errors.push(msg)
   }
 
+  const finishedAt = new Date()
   const totalSnapshots = results.adapters.reduce((s, r) => s + r.snapshotsCreated, 0)
+  const totalProductsFound = results.adapters.reduce((s, r) => s + r.productsFound, 0)
   const totalErrors = results.adapters.reduce((s, r) => s + r.errors, 0) + results.errors.length
+
+  // Write audit log for thesis reliability metrics
+  void prisma.cronLog.create({
+    data: {
+      job: "price-sync",
+      startedAt,
+      finishedAt,
+      durationMs: finishedAt.getTime() - startedAt.getTime(),
+      success: totalErrors === 0,
+      baselineSeeded: results.baseline?.seeded ?? 0,
+      productsFound: totalProductsFound,
+      snapshotsCreated: totalSnapshots,
+      errors: totalErrors,
+      warnings: results.errors,
+      metadata: { adapters: results.adapters.map(a => a.adapter) },
+    },
+  }).catch(() => {/* never block the response on the audit log */})
 
   return NextResponse.json({
     success: totalErrors === 0,
     startedAt,
-    finishedAt: new Date(),
+    finishedAt,
     baseline: results.baseline,
     adapters: results.adapters,
     pruned: results.pruned,

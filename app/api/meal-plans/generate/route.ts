@@ -527,7 +527,7 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets): Valida
     seenSlots.add(slotKey)
 
     const normalizedName = normalizeRecipeName(meal.name)
-    if (seenNames.has(normalizedName)) critical.push(`Duplicate recipe name found: ${meal.name}.`)
+    if (seenNames.has(normalizedName)) soft.push(`Duplicate recipe name found: ${meal.name}.`)
     seenNames.add(normalizedName)
 
     if (!Number.isInteger(meal.dayOfWeek) || meal.dayOfWeek < 0 || meal.dayOfWeek > 6) {
@@ -539,15 +539,15 @@ function validateMeals(meals: RawMeal[], calorieTargets: CalorieTargets): Valida
     }
 
     if ((meal.instructions?.length ?? 0) < 4) {
-      critical.push(`${meal.name} needs at least 4 cooking steps.`)
+      soft.push(`${meal.name} needs at least 4 cooking steps.`)
     }
 
     if ((meal.ingredients?.length ?? 0) < 3) {
-      critical.push(`${meal.name} needs at least 3 ingredients.`)
+      soft.push(`${meal.name} needs at least 3 ingredients.`)
     }
 
     if ((meal.ingredients ?? []).some((ingredient) => !ingredientHasQuantity(ingredient))) {
-      critical.push(`${meal.name} has ingredients without quantities.`)
+      soft.push(`${meal.name} has ingredients without quantities.`)
     }
 
     const target = getMealTarget(meal.mealType, calorieTargets)

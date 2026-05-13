@@ -410,6 +410,24 @@ model ReceiptLinePrice {
   @@index([ingredientId, purchasedAt])
 }
 
+// Audit trail for nightly cron runs — used for thesis reliability metrics
+model CronLog {
+  id               String   @id @default(cuid())
+  job              String
+  startedAt        DateTime
+  finishedAt       DateTime
+  durationMs       Int
+  success          Boolean
+  baselineSeeded   Int      @default(0)
+  productsFound    Int      @default(0)
+  snapshotsCreated Int      @default(0)
+  errors           Int      @default(0)
+  warnings         String[]
+  metadata         Json     @default("{}")
+
+  @@index([job, startedAt])
+}
+
 // Audit trail: why was a specific price chosen for a grocery item?
 model PriceResolutionLog {
   id                String           @id @default(cuid())

@@ -1,3 +1,4 @@
+import React from "react"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
@@ -738,8 +739,8 @@ export default async function DashboardPage() {
 
           {/* Meal rows */}
           {(["breakfast", "lunch", "dinner"] as const).map((mt) => (
-            <>
-              <div key={`label-${mt}`} className="pdf-plan-row-label">
+            <React.Fragment key={mt}>
+              <div className="pdf-plan-row-label">
                 {mt === "breakfast" ? "🌅" : mt === "lunch" ? "☀️" : "🌙"}<br />{mt}
               </div>
               {days.map((_, dayIndex) => {
@@ -761,7 +762,7 @@ export default async function DashboardPage() {
                   </div>
                 )
               })}
-            </>
+            </React.Fragment>
           ))}
         </div>
 
