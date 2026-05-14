@@ -1,6 +1,8 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 const CUISINE_LABEL: Record<string, string> = {
   moroccan:       "🇲🇦 Moroccan",
@@ -49,7 +51,7 @@ export async function sendWeeklyReport(params: {
   const budgetOver = totalCost && weeklyBudget ? totalCost > weeklyBudget : false
   const budgetDiff = totalCost && weeklyBudget ? Math.abs(totalCost - weeklyBudget).toFixed(0) : null
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "Soufra <onboarding@resend.dev>",
     to: email,
     subject: `${firstName}, your weekly Soufra report 📊`,
@@ -162,7 +164,7 @@ export async function sendWeeklyReport(params: {
 }
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "Soufra <onboarding@resend.dev>",
     to: email,
     subject: "Reset your Soufra password",
@@ -196,7 +198,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
 export async function sendWelcomeEmail(email: string, name: string) {
   const firstName = name?.split(" ")[0] || "there"
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: "Soufra <onboarding@resend.dev>",
     to: email,
     subject: "Welcome to Soufra",
