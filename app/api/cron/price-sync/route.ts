@@ -92,22 +92,26 @@ export async function GET(req: Request) {
   const totalProductsFound = results.adapters.reduce((s, r) => s + r.productsFound, 0)
   const totalErrors = results.adapters.reduce((s, r) => s + r.errors, 0) + results.errors.length
 
-  // Write audit log for thesis reliability metrics
-  void prisma.cronLog.create({
-    data: {
-      job: "price-sync",
-      startedAt,
-      finishedAt,
-      durationMs: finishedAt.getTime() - startedAt.getTime(),
-      success: totalErrors === 0,
-      baselineSeeded: results.baseline?.seeded ?? 0,
-      productsFound: totalProductsFound,
-      snapshotsCreated: totalSnapshots,
-      errors: totalErrors,
-      warnings: results.errors,
-      metadata: { adapters: results.adapters.map(a => a.adapter) },
-    },
-  }).catch(() => {/* never block the response on the audit log */})
+  // Write audit log — awaited before response so Vercel doesn't kill it mid-flight
+  try {
+    await prisma.cronLog.create({
+      data: {
+        job: "price-sync",
+        startedAt,
+        finishedAt,
+        durationMs: finishedAt.getTime() - startedAt.getTime(),
+        success: totalErrors === 0,
+        baselineSeeded: results.baseline?.seeded ?? 0,
+        productsFound: totalProductsFound,
+        snapshotsCreated: totalSnapshots,
+        errors: totalErrors,
+        warnings: results.errors,
+        metadata: { adapters: results.adapters.map(a => a.adapter) },
+      },
+    })
+  } catch (err) {
+    console.error("[price-sync] cronLog write failed:", (err as Error).message)
+  }
 
   return NextResponse.json({
     success: totalErrors === 0,

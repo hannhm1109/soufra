@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { getConfidenceLabel } from "@/lib/pricing"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle } from "lucide-react"
+import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle, Clock } from "lucide-react"
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
 import PrintGroceryButton from "@/components/print-grocery-button"
@@ -32,6 +32,53 @@ export default async function GroceryPage() {
   if (!user) redirect("/login")
 
   const groceryList = user.groceryLists[0] || null
+
+  // Resolution logs + last sync — run in parallel
+  const [resolutionLogs, lastSync] = await Promise.all([
+    groceryList
+      ? prisma.priceResolutionLog.findMany({
+          where: { groceryListId: groceryList.id },
+          select: {
+            groceryListItemId: true,
+            chosenSource: true,
+            resolutionMethod: true,
+            confidenceLevel: true,
+            explanation: true,
+          },
+        })
+      : Promise.resolve([]),
+    prisma.cronLog.findFirst({
+      where: { job: "price-sync", success: true },
+      orderBy: { finishedAt: "desc" },
+      select: { finishedAt: true },
+    }),
+  ])
+
+  // Per-item lookup keyed by groceryListItemId
+  const logsById: Record<string, {
+    chosenSource: string | null
+    resolutionMethod: string
+    confidenceLevel: string
+    explanation: string
+  }> = {}
+  for (const log of resolutionLogs) {
+    if (log.groceryListItemId) logsById[log.groceryListItemId] = log
+  }
+
+  const liveCount = resolutionLogs.filter(l =>
+    l.resolutionMethod === "exact_snapshot" || l.resolutionMethod === "recent_receipt_avg"
+  ).length
+  const baselineCount = resolutionLogs.filter(l =>
+    l.resolutionMethod === "baseline" || l.resolutionMethod === "category_fallback"
+  ).length
+
+  function formatSyncDate(date: Date): string {
+    const diffMs = Date.now() - date.getTime()
+    if (diffMs < 24 * 60 * 60 * 1000) return "today"
+    if (diffMs < 48 * 60 * 60 * 1000) return "yesterday"
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  }
+
   const confidenceLabel = getConfidenceLabel(groceryList?.priceConfidence)
   const marketTierLabel = groceryList?.marketTier
     ? groceryList.marketTier.charAt(0).toUpperCase() + groceryList.marketTier.slice(1)
@@ -196,8 +243,44 @@ export default async function GroceryPage() {
               ))}
             </div>
 
+            {/* Price source confidence strip */}
+            {(resolutionLogs.length > 0 || lastSync) && (
+              <div
+                className="rounded-2xl px-5 py-3 mb-6 flex flex-wrap items-center gap-3"
+                style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                {liveCount > 0 && (
+                  <span
+                    className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full"
+                    style={{ backgroundColor: "#F0FFF4", color: "#166534" }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: "#27AE60" }} />
+                    {liveCount} live {liveCount === 1 ? "price" : "prices"}
+                  </span>
+                )}
+                {baselineCount > 0 && (
+                  <span
+                    className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full"
+                    style={{ backgroundColor: "#FFFBEB", color: "#92400E" }}>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: "#D97706" }} />
+                    {baselineCount} baseline {baselineCount === 1 ? "estimate" : "estimates"}
+                  </span>
+                )}
+                {resolutionLogs.length === 0 && (
+                  <span className="text-sm" style={{ color: "#9CA3AF" }}>
+                    Regenerate your list to see price source details
+                  </span>
+                )}
+                <div className="flex-1" />
+                {lastSync && (
+                  <span className="text-xs flex items-center gap-1" style={{ color: "#9CA3AF" }}>
+                    <Clock size={12} />
+                    Last sync: {formatSyncDate(lastSync.finishedAt)}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Interactive list */}
-            <GroceryItemsList grouped={grouped} categoryEmojis={categoryEmojis} />
+            <GroceryItemsList grouped={grouped} categoryEmojis={categoryEmojis} resolutionLogs={logsById} />
           </>
         ) : (
           <div

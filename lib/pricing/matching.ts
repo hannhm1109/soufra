@@ -109,6 +109,29 @@ export function matchIngredient(opts: MatchOptions): MatchResult | null {
     }
   }
 
+  // Step 3.5: prefix match — product name starts with an alias/slug/name + space.
+  // Handles catalog entries like "oignons frais 1kg" → alias "oignon" → Onions,
+  // where trailing descriptors (variety, weight, brand) dilute the Dice score
+  // enough to miss the 0.6 fuzzy threshold.
+  // Same-category candidates are checked first to reduce false positives.
+  // Minimum length of 4 prevents short aliases (e.g. "ail") from over-matching.
+  const MIN_PREFIX_LEN = 4
+  const orderedForPrefix = productCategory
+    ? [
+        ...normIngredients.filter((i) => i.category.toLowerCase() === productCategory.toLowerCase()),
+        ...normIngredients.filter((i) => i.category.toLowerCase() !== productCategory.toLowerCase()),
+      ]
+    : normIngredients
+
+  for (const ing of orderedForPrefix) {
+    const candidates = [ing.normSlug, ing.normName, ...ing.normAliases]
+    for (const candidate of candidates) {
+      if (candidate.length >= MIN_PREFIX_LEN && needle.startsWith(candidate + " ")) {
+        return { ingredientId: ing.id, ingredientSlug: ing.slug, matchType: "fuzzy", confidenceScore: 0.88 }
+      }
+    }
+  }
+
   // Step 4: fuzzy match — prefer same category, then best score overall
   let bestScore = 0
   let bestMatch: MatchResult | null = null

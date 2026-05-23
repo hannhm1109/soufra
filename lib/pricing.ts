@@ -110,7 +110,7 @@ function normalizeText(value: string): string {
     .trim()
 }
 
-function stripLeadingQuantity(value: string): string {
+export function stripLeadingQuantity(value: string): string {
   return normalizeText(value).replace(
     /^((\d+(?:[./]\d+)?)|half|quarter|one|two|three)\s*([a-z]+)?\s+/i,
     ""

@@ -95,7 +95,7 @@ export default function GenerateButton({
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
             style={{ backgroundColor: "#F0F7F7", color: "#2D5F5D" }}>
             <Brain size={12} />
-            AI trained on {ratingCount} ratings
+            Personalised from {ratingCount} ratings
           </div>
         )}
 

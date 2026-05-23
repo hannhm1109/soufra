@@ -71,7 +71,15 @@ export function normalizeText(value: string): string {
 
 // Full normalization for matching: remove accents + normalize text + naive plural strip
 export function normalizeForMatch(value: string): string {
-  return removeAccents(normalizeText(value))
+  // Decode HTML entities that appear in scraped product names before any other processing
+  // e.g. "huile d&rsquo;olive" → "huile d olive", "&#8211;" → " "
+  const decoded = value
+    .replace(/&rsquo;|&#8217;|&#x2019;/g, " ")
+    .replace(/&lsquo;|&#8216;|&#x2018;/g, " ")
+    .replace(/&#8211;|&#x2013;|&ndash;/g, " ")
+    .replace(/&#8212;|&#x2014;|&mdash;/g, " ")
+    .replace(/&#038;|&amp;/g, " ")
+  return removeAccents(normalizeText(decoded))
     .replace(/(?<=[a-z])s\b/g, "") // strip trailing -s plurals only after a letter
     .trim()
 }

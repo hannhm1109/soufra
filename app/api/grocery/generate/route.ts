@@ -6,9 +6,12 @@ import {
   getConfidenceLabel,
   getPriceCatalog,
   groupIngredients,
+  stripLeadingQuantity,
   type MarketTierValue,
 } from "@/lib/pricing"
+import { logResolution, resolvePriceBatch } from "@/lib/pricing/resolve"
 import { prisma } from "@/lib/prisma"
+import { after } from "next/server"
 import { NextResponse } from "next/server"
 
 export async function POST() {
@@ -55,11 +58,16 @@ export async function POST() {
   const groupedIngredients = groupIngredients(allIngredients)
 
   const groceryItems = Array.from(groupedIngredients.entries()).map(([canonical, instances]) => {
-    const estimate = estimateIngredientPriceWithCatalog(canonical, marketTier, catalog)
+    const aggregated = aggregateQuantity(instances)
+    // Price using the total aggregated quantity, not just the first instance.
+    // e.g. "100g tomatoes" + "200g tomatoes" → price "300g tomatoes", not "100g tomatoes".
+    const nameOnly = stripLeadingQuantity(canonical)
+    const pricingText = /^\d/.test(aggregated) ? `${aggregated} ${nameOnly}` : canonical
+    const estimate = estimateIngredientPriceWithCatalog(pricingText, marketTier, catalog)
     return {
       ingredientId: estimate.ingredientId ?? null,
       name: estimate.canonicalName,
-      quantity: aggregateQuantity(instances),
+      quantity: aggregated,
       category: estimate.category,
       price: estimate.estimatedCost,
       unitPrice: estimate.unitPrice,
@@ -126,6 +134,34 @@ export async function POST() {
     },
     include: { items: true },
   })
+
+  // Wire PriceResolutionLog — runs after response is sent so it never delays the user.
+  // `after` is guaranteed to complete even in Vercel serverless (unlike fire-and-forget void).
+  const itemsWithIngredients = groceryList.items.filter((i) => i.ingredientId)
+  if (itemsWithIngredients.length > 0) {
+    after(async () => {
+      try {
+        const ingredients = await prisma.ingredient.findMany({
+          where: { id: { in: itemsWithIngredients.map((i) => i.ingredientId!) } },
+          select: { id: true, slug: true, defaultUnit: true },
+        })
+        const resolvedPrices = await resolvePriceBatch(ingredients, marketTier, city)
+        for (const item of itemsWithIngredients) {
+          const resolved = resolvedPrices.get(item.ingredientId!)
+          if (resolved) {
+            logResolution({
+              groceryListId: groceryList.id,
+              groceryListItemId: item.id,
+              ingredientId: item.ingredientId!,
+              resolved,
+            })
+          }
+        }
+      } catch {
+        // Never surface audit log failures to the user
+      }
+    })
+  }
 
   return NextResponse.json({
     success: true,

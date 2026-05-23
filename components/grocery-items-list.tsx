@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ChevronDown, ChevronUp, Beef, Leaf, Apple, Milk, Wheat, FlaskConical, ShoppingBasket, Check } from "lucide-react"
+import { ChevronDown, ChevronUp, Beef, Leaf, Apple, Milk, Wheat, FlaskConical, ShoppingBasket, Check, Info } from "lucide-react"
 
 const listVariants = {
   hidden: {},
@@ -21,9 +21,17 @@ interface GroceryItem {
   checked: boolean
 }
 
+interface ResolutionLog {
+  chosenSource: string | null
+  resolutionMethod: string
+  confidenceLevel: string
+  explanation: string
+}
+
 interface Props {
   grouped: Record<string, GroceryItem[]>
   categoryEmojis: Record<string, string>
+  resolutionLogs?: Record<string, ResolutionLog>
 }
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -48,7 +56,7 @@ const categoryColors: Record<string, { icon: string; bg: string; bar: string }> 
 
 const defaultColor = { icon: "#2D5F5D", bg: "#F0F7F7", bar: "#2D5F5D" }
 
-export default function GroceryItemsList({ grouped }: Props) {
+export default function GroceryItemsList({ grouped, resolutionLogs }: Props) {
   // Init checked state from DB values
   const initialChecked: Record<string, boolean> = {}
   for (const items of Object.values(grouped)) {
@@ -60,6 +68,7 @@ export default function GroceryItemsList({ grouped }: Props) {
   const [checked, setChecked]     = useState<Record<string, boolean>>(initialChecked)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [saving, setSaving]       = useState<Record<string, boolean>>({})
+  const [expanded, setExpanded]   = useState<Record<string, boolean>>({})
 
   const toggleItem = async (id: string) => {
     const next = !checked[id]
@@ -200,58 +209,119 @@ export default function GroceryItemsList({ grouped }: Props) {
               {!isCollapsed && (
                 <div className="px-4 pb-4 pt-1 space-y-1.5">
                   {items.map((item) => {
-                    const isChecked = checked[item.id]
-                    const isSaving  = saving[item.id]
+                    const isChecked  = checked[item.id]
+                    const isSaving   = saving[item.id]
+                    const log        = resolutionLogs?.[item.id]
+                    const isExpanded = !!expanded[item.id]
+
+                    const methodLabel: Record<string, string> = {
+                      exact_snapshot:    "Live catalog snapshot",
+                      recent_receipt_avg:"Receipt average",
+                      baseline:          "Baseline estimate",
+                      category_fallback: "Category fallback",
+                    }
+                    const confStyle: Record<string, { bg: string; color: string }> = {
+                      high:   { bg: "#F0FFF4", color: "#166534" },
+                      medium: { bg: "#FFFBEB", color: "#92400E" },
+                      low:    { bg: "#FFF1F2", color: "#991B1B" },
+                    }
+                    const isLive = log?.resolutionMethod === "exact_snapshot" || log?.resolutionMethod === "recent_receipt_avg"
+
                     return (
-                      <div
-                        key={item.id}
-                        onClick={() => !isSaving && toggleItem(item.id)}
-                        className="group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-150"
-                        style={{
-                          backgroundColor: isChecked ? "#F0FFF4" : "#FAFAFA",
-                          borderLeft: isChecked ? "3px solid #27AE60" : "3px solid transparent",
-                        }}
-                        onMouseEnter={e => {
-                          if (!isChecked) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F0F7F7"
-                        }}
-                        onMouseLeave={e => {
-                          if (!isChecked) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#FAFAFA"
-                        }}>
-
-                        {/* Checkbox */}
+                      <div key={item.id}>
                         <div
-                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                          onClick={() => !isSaving && toggleItem(item.id)}
+                          className="group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-150"
                           style={{
-                            borderColor: isChecked ? "#27AE60" : "#D1D5DB",
-                            backgroundColor: isChecked ? "#27AE60" : "white",
-                            transform: isSaving ? "scale(0.9)" : "scale(1)",
+                            backgroundColor: isChecked ? "#F0FFF4" : "#FAFAFA",
+                            borderLeft: isChecked ? "3px solid #27AE60" : "3px solid transparent",
+                          }}
+                          onMouseEnter={e => {
+                            if (!isChecked) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#F0F7F7"
+                          }}
+                          onMouseLeave={e => {
+                            if (!isChecked) (e.currentTarget as HTMLDivElement).style.backgroundColor = "#FAFAFA"
                           }}>
-                          {isChecked && <Check size={11} color="white" strokeWidth={3} />}
-                        </div>
 
-                        {/* Name */}
-                        <span
-                          className="flex-1 text-sm font-medium transition-all"
-                          style={{
-                            color: isChecked ? "#9CA3AF" : "#2C3E50",
-                            textDecoration: isChecked ? "line-through" : "none",
-                          }}>
-                          {item.name}
-                        </span>
+                          {/* Checkbox */}
+                          <div
+                            className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200"
+                            style={{
+                              borderColor: isChecked ? "#27AE60" : "#D1D5DB",
+                              backgroundColor: isChecked ? "#27AE60" : "white",
+                              transform: isSaving ? "scale(0.9)" : "scale(1)",
+                            }}>
+                            {isChecked && <Check size={11} color="white" strokeWidth={3} />}
+                          </div>
 
-                        {/* Right: quantity + price */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {/* Name */}
                           <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
-                            {item.quantity}
+                            className="flex-1 text-sm font-medium transition-all"
+                            style={{
+                              color: isChecked ? "#9CA3AF" : "#2C3E50",
+                              textDecoration: isChecked ? "line-through" : "none",
+                            }}>
+                            {item.name}
                           </span>
-                          {item.price != null && (
-                            <span className="text-sm font-semibold" style={{ color: isChecked ? "#9CA3AF" : "#2D5F5D" }}>
-                              ~{item.price} DH
+
+                          {/* Right: quantity + price + info button */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{ backgroundColor: "#F3F4F6", color: "#6B7280" }}>
+                              {item.quantity}
                             </span>
-                          )}
+                            {item.price != null && (
+                              <span className="text-sm font-semibold" style={{ color: isChecked ? "#9CA3AF" : "#2D5F5D" }}>
+                                ~{item.price} DH
+                              </span>
+                            )}
+                            {log && (
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))
+                                }}
+                                title="Why this price?"
+                                className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                                style={{
+                                  backgroundColor: isExpanded ? "#EFF6FF" : "#F3F4F6",
+                                  color: isExpanded ? "#3B82F6" : "#9CA3AF",
+                                }}>
+                                <Info size={12} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+
+                        {/* Price explainer panel */}
+                        {log && isExpanded && (
+                          <div
+                            className="mx-3 mb-1 p-3 rounded-xl text-xs"
+                            style={{ backgroundColor: "#F8FAFC", border: "1px solid #E2E8F0" }}>
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <span
+                                className="px-2 py-0.5 rounded-full font-semibold"
+                                style={{
+                                  backgroundColor: isLive ? "#F0FFF4" : "#FFFBEB",
+                                  color: isLive ? "#166534" : "#92400E",
+                                }}>
+                                {log.chosenSource ?? "Baseline"}
+                              </span>
+                              <span
+                                className="px-2 py-0.5 rounded-full font-semibold capitalize"
+                                style={confStyle[log.confidenceLevel] ?? confStyle.low}>
+                                {log.confidenceLevel} confidence
+                              </span>
+                              <span
+                                className="px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: "#F1F5F9", color: "#475569" }}>
+                                {methodLabel[log.resolutionMethod] ?? log.resolutionMethod}
+                              </span>
+                            </div>
+                            <p style={{ color: "#64748B", lineHeight: "1.5" }}>{log.explanation}</p>
+                          </div>
+                        )}
                       </div>
                     )
                   })}

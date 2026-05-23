@@ -226,7 +226,11 @@ async function ingestProduct({
   for (const price of product.prices) {
     await prisma.priceSnapshot.create({
       data: {
-        ingredientId: matchResult?.ingredientId ?? null,
+        // category_fallback picks the cheapest ingredient in the same category —
+        // too unreliable to associate a price with a specific ingredient.
+        ingredientId: (matchResult?.matchType !== "category_fallback")
+          ? (matchResult?.ingredientId ?? null)
+          : null,
         sourceCatalogProductId: catalogProduct.id,
         source: adapter.source,
         city: price.city ?? product.city ?? null,
