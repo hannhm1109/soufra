@@ -64,12 +64,13 @@ export async function POST() {
     const nameOnly = stripLeadingQuantity(canonical)
     const pricingText = /^\d/.test(aggregated) ? `${aggregated} ${nameOnly}` : canonical
     const estimate = estimateIngredientPriceWithCatalog(pricingText, marketTier, catalog)
+    const isFree = ["water", "salt", "ice"].includes(nameOnly.toLowerCase().trim())
     return {
       ingredientId: estimate.ingredientId ?? null,
       name: estimate.canonicalName,
       quantity: aggregated,
       category: estimate.category,
-      price: estimate.estimatedCost,
+      price: isFree ? null : estimate.estimatedCost,
       unitPrice: estimate.unitPrice,
       priceSource: estimate.priceSource,
       priceConfidence: estimate.priceConfidence,

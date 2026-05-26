@@ -86,20 +86,23 @@ export async function resolvePrice(
     const packageQty = bestSnapshot.packageQuantityValue
     const packageUnit = bestSnapshot.packageQuantityUnit
 
-    // Normalize unitPrice to ingredient's defaultUnit
-    let unitPrice: number | null = rawUnitPrice
-    if (rawUnitPrice && rawBaseUnit && rawBaseUnit !== ingredientDefaultUnit) {
-      const converted = convertToBaseUnits(rawUnitPrice, rawBaseUnit, ingredientDefaultUnit)
-      unitPrice = converted ?? rawUnitPrice
+    // Use stored unitPrice when it's already in the right unit (most common case).
+    // Rate conversion (MAD/g → MAD/kg) requires ×1000 not ÷1000, so we cannot
+    // reuse convertToBaseUnits (which converts quantities, not rates).
+    // When units differ, fall back to package derivation which is always correct.
+    let unitPrice: number | null = null
+    if (rawUnitPrice && rawUnitPrice > 0 && (!rawBaseUnit || rawBaseUnit === ingredientDefaultUnit)) {
+      unitPrice = rawUnitPrice
     }
-
-    // If unitPrice is missing, derive from packagePrice / packageQty
-    if (!unitPrice && rawPackagePrice && packageQty && packageUnit) {
+    // Fall back to package derivation when stored unitPrice is absent or unit differs
+    if ((!unitPrice || unitPrice <= 0) && rawPackagePrice && packageQty && packageUnit) {
       const packageInDefaultUnit = convertToBaseUnits(packageQty, packageUnit, ingredientDefaultUnit)
       if (packageInDefaultUnit && packageInDefaultUnit > 0) {
         unitPrice = rawPackagePrice / packageInDefaultUnit
       }
     }
+    // Sanity cap: reject corrupted snapshot data (e.g. packageQty=1g → ×1000 error)
+    if (unitPrice && unitPrice > 500) unitPrice = null
 
     if (unitPrice && unitPrice > 0) {
       const ageMs = now - bestSnapshot.capturedAt.getTime()
@@ -284,14 +287,18 @@ export async function resolvePriceBatch(
       const packageQty = bestSnap.packageQuantityValue
       const packageUnit = bestSnap.packageQuantityUnit
 
-      let unitPrice: number | null = rawUnitPrice
-      if (rawUnitPrice && rawBaseUnit && rawBaseUnit !== ing.defaultUnit) {
-        unitPrice = convertToBaseUnits(rawUnitPrice, rawBaseUnit, ing.defaultUnit) ?? rawUnitPrice
+      // Use stored unitPrice when already in the right unit; fall back to package derivation.
+      // Rate conversion (MAD/g → MAD/kg) inverts via convertToBaseUnits so we skip it.
+      let unitPrice: number | null = null
+      if (rawUnitPrice && rawUnitPrice > 0 && (!rawBaseUnit || rawBaseUnit === ing.defaultUnit)) {
+        unitPrice = rawUnitPrice
       }
-      if (!unitPrice && rawPackagePrice && packageQty && packageUnit) {
+      if ((!unitPrice || unitPrice <= 0) && rawPackagePrice && packageQty && packageUnit) {
         const pQty = convertToBaseUnits(packageQty, packageUnit, ing.defaultUnit)
         if (pQty && pQty > 0) unitPrice = rawPackagePrice / pQty
       }
+      // Sanity cap: reject corrupted snapshot data (e.g. packageQty=1g → ×1000 error)
+      if (unitPrice && unitPrice > 500) unitPrice = null
 
       if (unitPrice && unitPrice > 0) {
         const ageMs = now - bestSnap.capturedAt.getTime()

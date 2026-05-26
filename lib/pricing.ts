@@ -57,21 +57,27 @@ export interface IngredientEstimate {
 const countUnits = new Set(["pc", "bunch", "can", "jar", "pot", "dozen", "loaf", "bag"])
 
 const UNIT_NORMALIZE: Record<string, string> = {
+  // Weight
   g: "g",
+  gr: "g",
   gram: "g",
   grams: "g",
   kg: "kg",
+  kilo: "kg",
   kilogram: "kg",
   kilograms: "kg",
+  // Volume
   ml: "ml",
   milliliter: "ml",
   milliliters: "ml",
   millilitre: "ml",
+  cl: "cl",          // 1 cl = 10 ml — kept as own unit, converted in convertToBaseUnits
   l: "l",
   liter: "l",
   litre: "l",
   liters: "l",
   litres: "l",
+  // Spoon / cup
   tbsp: "tbsp",
   tablespoon: "tbsp",
   tablespoons: "tbsp",
@@ -80,13 +86,20 @@ const UNIT_NORMALIZE: Record<string, string> = {
   teaspoons: "tsp",
   cup: "cup",
   cups: "cup",
+  // Pieces / counts
   clove: "pc",
   cloves: "pc",
   piece: "pc",
   pieces: "pc",
   pcs: "pc",
+  egg: "pc",
+  eggs: "pc",
+  // Bunches / herbs
   bunch: "bunch",
   bunches: "bunch",
+  sprig: "bunch",
+  sprigs: "bunch",
+  // Containers
   can: "can",
   cans: "can",
   jar: "jar",
@@ -97,15 +110,37 @@ const UNIT_NORMALIZE: Record<string, string> = {
   loaves: "loaf",
   bag: "bag",
   bags: "bag",
+  // Slices
   slice: "slice",
   slices: "slice",
+  // Approximate small amounts for recipe-style descriptions
+  pinch: "tsp",
+  pinches: "tsp",
+  handful: "tbsp",
+  handfuls: "tbsp",
+  // Produce plurals → singular so mixed plurals aggregate correctly
+  // (singular forms intentionally absent — the count-fix uses them as food-name units)
+  carrots: "carrot",
+  tomatoes: "tomato",
+  onions: "onion",
+  potatoes: "potato",
+  zucchinis: "zucchini",
+  peppers: "pepper",
+  bananas: "banana",
+  apples: "apple",
+  oranges: "orange",
+  lemons: "lemon",
+  limes: "lime",
+  peaches: "peach",
+  pears: "pear",
+  fillets: "fillet",
 }
 
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
     .replace(/[()]/g, " ")
-    .replace(/[.,]/g, " ")
+    .replace(/[.,\-_/]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
 }
@@ -159,6 +194,12 @@ function convertToBaseUnits(
   if (quantityUnit === "ml" && baseUnit === "l") return quantityValue / 1000
   if (quantityUnit === "l" && baseUnit === "ml") return quantityValue * 1000
 
+  // 1 cl = 10 ml (UNIT_NORMALIZE keeps cl as "cl" rather than collapsing to ml)
+  if (quantityUnit === "cl") {
+    if (baseUnit === "ml") return quantityValue * 10
+    if (baseUnit === "l") return quantityValue / 100
+  }
+
   if (quantityUnit === "tbsp") {
     if (baseUnit === "l") return (quantityValue * 15) / 1000
     if (baseUnit === "ml") return quantityValue * 15
@@ -179,8 +220,12 @@ function convertToBaseUnits(
     if (baseUnit === "kg") return quantityValue * 0.12
   }
 
+  // Weight to bunch: ~250g per bunch of leafy herbs/veg (spinach, parsley, cilantro, mint)
+  if (quantityUnit === "g" && baseUnit === "bunch") return quantityValue / 250
+  if (quantityUnit === "kg" && baseUnit === "bunch") return (quantityValue * 1000) / 250
+
   if (quantityUnit === "pc" && baseUnit === "dozen") return quantityValue / 12
-  if (quantityUnit === "slice" && baseUnit === "loaf") return quantityValue / 10
+  if (quantityUnit === "slice" && baseUnit === "loaf") return quantityValue / 20  // ~20 slices per loaf
 
   return null
 }
@@ -338,9 +383,24 @@ export function estimateIngredientPriceWithCatalog(
   }
 
   const parsedQuantity = parseQuantity(ingredientText)
-  const unitsNeeded = parsedQuantity
+  let unitsNeeded = parsedQuantity
     ? convertToBaseUnits(parsedQuantity.value, parsedQuantity.unit, entry.defaultUnit)
     : null
+
+  // When the unit is a food name (e.g. "onion", "eggs", "bell") rather than a
+  // standard unit, treat the number as a count. Guard: only apply when the parsed
+  // unit is NOT a known standard unit — "500ml" must NOT be treated as 500 pieces.
+  if (unitsNeeded === null && parsedQuantity) {
+    const standardUnits = new Set(Object.values(UNIT_NORMALIZE))
+    const isStandardUnit = standardUnits.has(parsedQuantity.unit) || parsedQuantity.unit === ""
+    if (!isStandardUnit) {
+      if (countUnits.has(entry.defaultUnit)) {
+        unitsNeeded = parsedQuantity.value
+      } else if (entry.defaultUnit === "kg") {
+        unitsNeeded = parsedQuantity.value * 0.15
+      }
+    }
+  }
 
   const estimatedCost = estimatePurchaseCost(unitsNeeded ?? 0.35, entry.referencePriceMad, entry.defaultUnit)
 

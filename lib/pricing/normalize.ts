@@ -15,7 +15,7 @@ export const UNIT_NORMALIZE: Record<string, string> = {
   milliliter: "ml",
   milliliters: "ml",
   millilitre: "ml",
-  cl: "ml", // 1cl = 10ml — normalised later via convertUnits
+  cl: "cl", // 1cl = 10ml — keep as own unit, converted in convertToBaseUnits
   l: "l",
   liter: "l",
   litre: "l",
@@ -183,7 +183,7 @@ export function convertToBaseUnits(
   }
   if (quantityUnit === "pc" && baseUnit === "dozen") return quantityValue / 12
   if (quantityUnit === "dozen" && baseUnit === "pc") return quantityValue * 12
-  if (quantityUnit === "slice" && baseUnit === "loaf") return quantityValue / 10
+  if (quantityUnit === "slice" && baseUnit === "loaf") return quantityValue / 20
 
   return null
 }
