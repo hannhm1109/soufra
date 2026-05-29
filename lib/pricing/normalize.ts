@@ -35,6 +35,8 @@ export const UNIT_NORMALIZE: Record<string, string> = {
   pieces: "pc",
   pcs: "pc",
   pc: "pc",
+  egg: "pc",
+  eggs: "pc",
   bunch: "bunch",
   bunches: "bunch",
   can: "can",
@@ -51,6 +53,8 @@ export const UNIT_NORMALIZE: Record<string, string> = {
   slices: "slice",
   dozen: "dozen",
   pack: "pack",
+  bottle: "bottle",
+  bottles: "bottle",
   sachet: "bag",
 }
 
@@ -105,7 +109,14 @@ function parseNumberToken(token: string): number | null {
 
 // Parse "500g", "1.5 kg", "2/3 cup", "12 pieces" → { value, unit }
 export function parseQuantity(input: string): { value: number; unit: string } | null {
-  const normalized = normalizeText(input)
+  // Lowercase and unify French decimal commas (1,5 → 1.5) WITHOUT stripping the
+  // decimal point. normalizeText() removes "." and would turn "1.5" into "1 5",
+  // collapsing "1.5 kg" to { value: 1 } — wrong for receipt and pack quantities.
+  const normalized = input
+    .toLowerCase()
+    .replace(/(\d),(\d)/g, "$1.$2")
+    .replace(/\s+/g, " ")
+    .trim()
   // Support patterns like "500g", "1.5 kg", "1/2 cup", "6x120g" (take first segment)
   const match = normalized.match(/(\d+(?:[./]\d+)?)\s*([a-z]+)?/)
   if (!match) return null
@@ -156,6 +167,14 @@ export function convertToBaseUnits(
 ): number | null {
   if (!quantityUnit || quantityUnit === baseUnit) return quantityValue
 
+  const packMatch = baseUnit.match(/^(\d+(?:\.\d+)?)\s*(g|kg|ml|l)$/)
+  if (packMatch) {
+    const packValue = Number.parseFloat(packMatch[1])
+    const packUnit = packMatch[2]
+    const quantityInPackUnit = convertToBaseUnits(quantityValue, quantityUnit, packUnit)
+    if (quantityInPackUnit != null && packValue > 0) return quantityInPackUnit / packValue
+  }
+
   if (quantityUnit === "g" && baseUnit === "kg") return quantityValue / 1000
   if (quantityUnit === "kg" && baseUnit === "g") return quantityValue * 1000
   if (quantityUnit === "ml" && baseUnit === "l") return quantityValue / 1000
@@ -181,6 +200,12 @@ export function convertToBaseUnits(
     if (baseUnit === "kg") return quantityValue * 0.12
     if (baseUnit === "g") return quantityValue * 120
   }
+  if (quantityUnit === "g" && baseUnit === "bunch") return quantityValue / 250
+  if (quantityUnit === "kg" && baseUnit === "bunch") return (quantityValue * 1000) / 250
+  if (quantityUnit === "g" && baseUnit === "pot") return quantityValue / 250
+  if (quantityUnit === "kg" && baseUnit === "pot") return (quantityValue * 1000) / 250
+  if (quantityUnit === "ml" && baseUnit === "pot") return quantityValue / 250
+  if (quantityUnit === "l" && baseUnit === "pot") return (quantityValue * 1000) / 250
   if (quantityUnit === "pc" && baseUnit === "dozen") return quantityValue / 12
   if (quantityUnit === "dozen" && baseUnit === "pc") return quantityValue * 12
   if (quantityUnit === "slice" && baseUnit === "loaf") return quantityValue / 20

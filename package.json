@@ -7,6 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --import tsx --test tests/pricing.test.ts",
     "seed:prices": "node prisma/seed-prices.mjs"
   },
   "dependencies": {

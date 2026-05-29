@@ -1,10 +1,15 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { matchIngredient, type IngredientRow } from "@/lib/pricing/matching"
 import { parseQuantity, UNIT_NORMALIZE } from "@/lib/pricing/normalize"
 import { NextResponse } from "next/server"
 import OpenAI from "openai"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+// Only learn a price from a receipt line when the ingredient match is confident.
+// Below this we keep the line for the user's records but don't pollute pricing data.
+const MIN_MATCH_CONFIDENCE = 0.6
 
 interface ParsedItem {
   name: string
@@ -16,7 +21,21 @@ interface ParsedItem {
 interface ParsedReceipt {
   storeName?: string
   total?: number
+  purchasedAt?: string
   items: ParsedItem[]
+}
+
+// Parse a receipt date string, rejecting garbage and future dates.
+// Falls back to "now" so an unreadable date never blocks the upload.
+function parseReceiptDate(raw: unknown): Date {
+  if (typeof raw === "string" && raw.trim()) {
+    const parsed = new Date(raw.trim())
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    if (!Number.isNaN(parsed.getTime()) && parsed.getFullYear() >= 2015 && parsed <= tomorrow) {
+      return parsed
+    }
+  }
+  return new Date()
 }
 
 export async function POST(req: Request) {
@@ -52,6 +71,7 @@ Return ONLY valid JSON with this exact structure:
 {
   "storeName": "store name or null",
   "total": total amount in MAD as number or null,
+  "purchasedAt": "purchase date in YYYY-MM-DD format or null",
   "items": [
     {
       "name": "item name in English",
@@ -66,6 +86,7 @@ Rules:
 - Translate Arabic or French item names to English
 - Normalize item names (e.g. "POULET" → "chicken", "TOMATES" → "tomatoes")
 - If you cannot read a price clearly, set it to null
+- For purchasedAt, read the transaction date printed on the receipt; if absent or unreadable, set it to null
 - Include ALL line items you can see
 - Do not include totals, subtotals, taxes, or discounts as items`,
           },
@@ -87,6 +108,7 @@ Rules:
   }
 
   const items = Array.isArray(parsed.items) ? parsed.items : []
+  const purchasedAt = parseReceiptDate(parsed.purchasedAt)
 
   // ── Save receipt to DB ────────────────────────────────────────
   const receipt = await prisma.receipt.create({
@@ -95,7 +117,7 @@ Rules:
       storeName: parsed.storeName ?? null,
       city: user.city ?? null,
       totalMad: parsed.total ?? null,
-      purchasedAt: new Date(),
+      purchasedAt,
       status: "reviewed",
       items: {
         create: items.map(item => ({
@@ -115,23 +137,25 @@ Rules:
   let pricesLearned = 0
   const marketTier = user.marketTier ?? "supermarket"
   const city = user.city ?? "Casablanca"
-  const purchasedAt = new Date()
+
+  // Load the ingredient catalog once and reuse the same 6-step matcher the
+  // store-scrape pipeline uses, instead of a loose substring query that can
+  // mis-link "chicken" → "chicken-breast" and corrupt the learned prices.
+  const ingredientRows: Array<IngredientRow & { defaultUnit: string }> =
+    await prisma.ingredient.findMany({
+      select: { id: true, slug: true, name: true, category: true, defaultUnit: true, aliases: { select: { alias: true } } },
+    })
 
   for (const receiptItem of receipt.items) {
     if (!receiptItem.priceMad || !receiptItem.normalizedName) continue
 
-    // Find matching ingredient by alias or slug
-    const ingredient = await prisma.ingredient.findFirst({
-      where: {
-        OR: [
-          { slug: { contains: receiptItem.normalizedName, mode: "insensitive" } },
-          { name: { contains: receiptItem.normalizedName, mode: "insensitive" } },
-          { aliases: { some: { alias: { contains: receiptItem.normalizedName, mode: "insensitive" } } } },
-        ],
-      },
+    const match = matchIngredient({
+      normalizedProductName: receiptItem.normalizedName,
+      ingredients: ingredientRows,
     })
 
-    if (ingredient) {
+    if (match && match.confidenceScore >= MIN_MATCH_CONFIDENCE) {
+      const ingredient = ingredientRows.find((i) => i.id === match.ingredientId)!
       // Link receipt item to ingredient
       await prisma.receiptItem.update({
         where: { id: receiptItem.id },

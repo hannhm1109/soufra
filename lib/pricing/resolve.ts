@@ -50,6 +50,81 @@ function legacySource(source: string): LegacyPriceSource {
   return "curated"
 }
 
+function deriveUnitPriceFromPackage(
+  packagePrice: number | null,
+  packageQty: number | null,
+  packageUnit: string | null,
+  defaultUnit: string
+): number | null {
+  if (!packagePrice || packagePrice <= 0 || !packageQty || packageQty <= 0 || !packageUnit) {
+    return null
+  }
+
+  const packageInDefaultUnit = convertToBaseUnits(packageQty, packageUnit, defaultUnit)
+  if (!packageInDefaultUnit || packageInDefaultUnit <= 0) return null
+
+  return packagePrice / packageInDefaultUnit
+}
+
+function minimumReasonableUnitPrice(defaultUnit: string): number {
+  if (/^\d+(?:\.\d+)?\s*(g|kg|ml|l)$/.test(defaultUnit)) return 0.5
+
+  const floors: Record<string, number> = {
+    kg: 2,
+    l: 2,
+    dozen: 8,
+    pot: 2,
+    can: 4,
+    jar: 4,
+    bottle: 4,
+    loaf: 1,
+    bag: 1,
+    bunch: 1,
+    pc: 0.5,
+  }
+
+  return floors[defaultUnit] ?? 0.2
+}
+
+function isImplausibleUnitPrice(unitPrice: number, defaultUnit: string): boolean {
+  if (!Number.isFinite(unitPrice) || unitPrice <= 0) return true
+  if (unitPrice > 500) return true
+  return unitPrice < minimumReasonableUnitPrice(defaultUnit)
+}
+
+function selectSnapshotUnitPrice(params: {
+  rawUnitPrice: number | null
+  rawBaseUnit: string | null
+  rawPackagePrice: number | null
+  packageQty: number | null
+  packageUnit: string | null
+  defaultUnit: string
+}): number | null {
+  const stored =
+    params.rawUnitPrice && params.rawUnitPrice > 0 && (!params.rawBaseUnit || params.rawBaseUnit === params.defaultUnit)
+      ? params.rawUnitPrice
+      : null
+
+  const derived = deriveUnitPriceFromPackage(
+    params.rawPackagePrice,
+    params.packageQty,
+    params.packageUnit,
+    params.defaultUnit
+  )
+
+  const storedPlausible =
+    stored !== null && !isImplausibleUnitPrice(stored, params.defaultUnit) ? stored : null
+  const derivedPlausible =
+    derived !== null && !isImplausibleUnitPrice(derived, params.defaultUnit) ? derived : null
+
+  if (storedPlausible !== null && derivedPlausible !== null) {
+    const ratio = Math.max(storedPlausible, derivedPlausible) / Math.min(storedPlausible, derivedPlausible)
+    return ratio > 3 ? derivedPlausible : storedPlausible
+  }
+
+  return storedPlausible ?? derivedPlausible
+}
+
 export async function resolvePrice(
   ingredientId: string,
   ingredientSlug: string,
@@ -86,23 +161,15 @@ export async function resolvePrice(
     const packageQty = bestSnapshot.packageQuantityValue
     const packageUnit = bestSnapshot.packageQuantityUnit
 
-    // Use stored unitPrice when it's already in the right unit (most common case).
-    // Rate conversion (MAD/g → MAD/kg) requires ×1000 not ÷1000, so we cannot
-    // reuse convertToBaseUnits (which converts quantities, not rates).
-    // When units differ, fall back to package derivation which is always correct.
-    let unitPrice: number | null = null
-    if (rawUnitPrice && rawUnitPrice > 0 && (!rawBaseUnit || rawBaseUnit === ingredientDefaultUnit)) {
-      unitPrice = rawUnitPrice
-    }
-    // Fall back to package derivation when stored unitPrice is absent or unit differs
-    if ((!unitPrice || unitPrice <= 0) && rawPackagePrice && packageQty && packageUnit) {
-      const packageInDefaultUnit = convertToBaseUnits(packageQty, packageUnit, ingredientDefaultUnit)
-      if (packageInDefaultUnit && packageInDefaultUnit > 0) {
-        unitPrice = rawPackagePrice / packageInDefaultUnit
-      }
-    }
-    // Sanity cap: reject corrupted snapshot data (e.g. packageQty=1g → ×1000 error)
-    if (unitPrice && unitPrice > 500) unitPrice = null
+    // Prefer trustworthy package-derived rates when stored snapshot rates look corrupted.
+    const unitPrice = selectSnapshotUnitPrice({
+      rawUnitPrice,
+      rawBaseUnit,
+      rawPackagePrice,
+      packageQty,
+      packageUnit,
+      defaultUnit: ingredientDefaultUnit,
+    })
 
     if (unitPrice && unitPrice > 0) {
       const ageMs = now - bestSnapshot.capturedAt.getTime()
@@ -287,18 +354,15 @@ export async function resolvePriceBatch(
       const packageQty = bestSnap.packageQuantityValue
       const packageUnit = bestSnap.packageQuantityUnit
 
-      // Use stored unitPrice when already in the right unit; fall back to package derivation.
-      // Rate conversion (MAD/g → MAD/kg) inverts via convertToBaseUnits so we skip it.
-      let unitPrice: number | null = null
-      if (rawUnitPrice && rawUnitPrice > 0 && (!rawBaseUnit || rawBaseUnit === ing.defaultUnit)) {
-        unitPrice = rawUnitPrice
-      }
-      if ((!unitPrice || unitPrice <= 0) && rawPackagePrice && packageQty && packageUnit) {
-        const pQty = convertToBaseUnits(packageQty, packageUnit, ing.defaultUnit)
-        if (pQty && pQty > 0) unitPrice = rawPackagePrice / pQty
-      }
-      // Sanity cap: reject corrupted snapshot data (e.g. packageQty=1g → ×1000 error)
-      if (unitPrice && unitPrice > 500) unitPrice = null
+      // Prefer trustworthy package-derived rates when stored snapshot rates look corrupted.
+      const unitPrice = selectSnapshotUnitPrice({
+        rawUnitPrice,
+        rawBaseUnit,
+        rawPackagePrice,
+        packageQty,
+        packageUnit,
+        defaultUnit: ing.defaultUnit,
+      })
 
       if (unitPrice && unitPrice > 0) {
         const ageMs = now - bestSnap.capturedAt.getTime()

@@ -63,17 +63,32 @@ export async function POST() {
     // e.g. "100g tomatoes" + "200g tomatoes" → price "300g tomatoes", not "100g tomatoes".
     const nameOnly = stripLeadingQuantity(canonical)
     const pricingText = /^\d/.test(aggregated) ? `${aggregated} ${nameOnly}` : canonical
-    const estimate = estimateIngredientPriceWithCatalog(pricingText, marketTier, catalog)
+    let estimate = estimateIngredientPriceWithCatalog(pricingText, marketTier, catalog)
+    let estimatedCost = estimate.estimatedCost
+    let priceConfidence = estimate.priceConfidence
+
+    // If quantities could not be merged into one unit ("x6"), price each source
+    // line and sum them rather than pricing only the first ingredient string.
+    if (aggregated.startsWith("x") && instances.length > 1) {
+      const instanceEstimates = instances.map((item) =>
+        estimateIngredientPriceWithCatalog(item, marketTier, catalog)
+      )
+      estimate = instanceEstimates[0] ?? estimate
+      estimatedCost = instanceEstimates.reduce((sum, item) => sum + item.estimatedCost, 0)
+      priceConfidence = instanceEstimates.length > 0
+        ? instanceEstimates.reduce((sum, item) => sum + item.priceConfidence, 0) / instanceEstimates.length
+        : estimate.priceConfidence
+    }
     const isFree = ["water", "salt", "ice"].includes(nameOnly.toLowerCase().trim())
     return {
       ingredientId: estimate.ingredientId ?? null,
       name: estimate.canonicalName,
       quantity: aggregated,
       category: estimate.category,
-      price: isFree ? null : estimate.estimatedCost,
+      price: isFree ? null : Number.parseFloat(estimatedCost.toFixed(1)),
       unitPrice: estimate.unitPrice,
       priceSource: estimate.priceSource,
-      priceConfidence: estimate.priceConfidence,
+      priceConfidence,
       estimatedTier: estimate.marketTier,
       store: estimate.sourceLabel,
     }
