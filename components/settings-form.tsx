@@ -146,6 +146,9 @@ export default function SettingsForm({ user }: { user: UserData }) {
     data.height !== baseline.height ||
     data.allergies.join(",") !== baseline.allergies.join(",") ||
     data.isRamadan !== baseline.isRamadan
+  const pricingAffectingChanged =
+    data.marketTier !== baseline.marketTier ||
+    data.weeklyBudget !== baseline.weeklyBudget
 
   const handleSave = async () => {
     setLoading(true)
@@ -158,10 +161,15 @@ export default function SettingsForm({ user }: { user: UserData }) {
       })
       if (res.ok) {
         const needsRegen = planAffectingChanged
+        const needsGroceryRegen = pricingAffectingChanged
         setBaseline(data)
         setSaved(true)
-        if (needsRegen) {
+        if (needsRegen && needsGroceryRegen) {
+          toast.success("Settings saved! Generate a new meal plan and grocery list to apply all changes.", { duration: 6500 })
+        } else if (needsRegen) {
           toast.success("Settings saved! Go to the dashboard and generate a new plan to apply your changes.", { duration: 6000 })
+        } else if (needsGroceryRegen) {
+          toast.success("Settings saved! Regenerate your grocery list to apply pricing changes.", { duration: 6000 })
         } else {
           toast.success("Settings saved!")
         }
@@ -191,6 +199,17 @@ export default function SettingsForm({ user }: { user: UserData }) {
           <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#F59E0B" }} />
           <p className="text-sm" style={{ color: "#92400E" }}>
             You&apos;ve changed plan-affecting settings (cuisines, goal, or profile). Save then <strong>generate a new meal plan</strong> from the dashboard to apply them.
+          </p>
+        </div>
+      )}
+      {pricingAffectingChanged && (
+        <div
+          className="flex items-start gap-3 rounded-2xl p-4"
+          style={{ backgroundColor: "#F0F7F7", border: "1px solid #D1E7E7" }}
+        >
+          <Store size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#2D5F5D" }} />
+          <p className="text-sm" style={{ color: "#2D5F5D" }}>
+            Your budget or shopping style changed. Save, then <strong>regenerate your grocery list</strong> so prices and budget checks refresh.
           </p>
         </div>
       )}

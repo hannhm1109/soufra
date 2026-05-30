@@ -87,12 +87,12 @@ export default function GenerateButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-3">
-      <div className="flex items-center gap-3">
+    <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:items-end">
+      <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
         {/* Rating count badge */}
         {ratingCount > 0 && (
           <div
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
+            className="flex items-center justify-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium"
             style={{ backgroundColor: "#F0F7F7", color: "#2D5F5D" }}>
             <Brain size={12} />
             Personalised from {ratingCount} ratings
@@ -102,7 +102,7 @@ export default function GenerateButton({
         <button
           onClick={handleClick}
           disabled={loading}
-          className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-100 disabled:scale-100 disabled:opacity-70 text-sm sm:text-base"
+          className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl hover:scale-105 active:scale-100 disabled:scale-100 disabled:opacity-70 text-sm sm:text-base"
           style={{ backgroundColor: "#E67E22" }}>
           {loading ? (
             <>

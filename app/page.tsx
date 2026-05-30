@@ -516,7 +516,7 @@ export default function LandingPage() {
               {
                 step: "3",
                 title: "Shop with your list",
-                desc: "Your grocery list is auto-generated with estimated prices in MAD. Check items off as you shop. Scan receipts to improve future price estimates.",
+                desc: "Your grocery list is auto-generated with estimated prices in MAD. Check items off as you shop and export it for the market.",
                 img: "/icons/how-shop.png",
                 color: "#F0FFF4",
               },

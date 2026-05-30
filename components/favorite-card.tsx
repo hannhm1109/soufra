@@ -1,6 +1,8 @@
 "use client"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import Link from "next/link"
 import { Heart, Clock, Flame, ChefHat, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -16,6 +18,8 @@ interface Recipe {
   protein: number
   carbs: number
   fats: number
+  imageUrl?: string | null
+  tags: string[]
 }
 
 const cuisineColors: Record<string, { bg: string; color: string }> = {
@@ -29,8 +33,9 @@ const cuisineColors: Record<string, { bg: string; color: string }> = {
 export default function FavoriteCard({ recipe }: { recipe: Recipe }) {
   const router = useRouter()
   const [removing, setRemoving] = useState(false)
+  const [removed, setRemoved] = useState(false)
 
-  const handleRemove = async (e: React.MouseEvent) => {
+  const handleRemove = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
     e.stopPropagation()
     setRemoving(true)
@@ -42,6 +47,7 @@ export default function FavoriteCard({ recipe }: { recipe: Recipe }) {
       })
       if (res.ok) {
         toast("Removed from favorites")
+        setRemoved(true)
         router.refresh()
       } else {
         toast.error("Couldn't remove. Try again.")
@@ -55,71 +61,97 @@ export default function FavoriteCard({ recipe }: { recipe: Recipe }) {
 
   const colors = cuisineColors[recipe.cuisine] ?? { bg: "#F0F7F7", color: "#2D5F5D" }
   const total = recipe.protein + recipe.carbs + recipe.fats || 1
+  const time = recipe.prepTime + recipe.cookTime
+
+  if (removed) return null
 
   return (
-    <div className="relative group">
-      <Link href={`/dashboard/recipe/${recipe.id}`}>
+    <div className="relative group h-full">
+      <Link href={`/dashboard/recipe/${recipe.id}`} className="block h-full" aria-label={`Open ${recipe.name}`}>
         <div
-          className="rounded-2xl p-6 cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
+          className="h-full overflow-hidden rounded-2xl cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1"
           style={{ backgroundColor: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
 
-          {/* Cuisine badge + heart */}
-          <div className="flex items-center justify-between mb-3">
-            <span
-              className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full"
-              style={{ backgroundColor: colors.bg, color: colors.color }}>
-              {recipe.cuisine.replace("_", " ")}
-            </span>
-            <Heart size={16} style={{ color: "#E74C3C" }} fill="#E74C3C" />
-          </div>
-
-          {/* Recipe name */}
-          <h3
-            className="font-bold text-lg mb-3 leading-tight"
-            style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
-            {recipe.name}
-          </h3>
-
-          {/* Stats row */}
-          <div className="flex items-center gap-3">
-            {[
-              { icon: Clock,   label: `${recipe.prepTime + recipe.cookTime}min` },
-              { icon: Flame,   label: `${recipe.calories} kcal` },
-              { icon: ChefHat, label: recipe.difficulty },
-            ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-1">
-                <Icon size={12} style={{ color: "#9CA3AF" }} />
-                <span className="text-xs" style={{ color: "#6B7280" }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Macros bar */}
-          <div className="mt-4">
-            <div className="flex rounded-full overflow-hidden h-2">
-              <div style={{ width: `${(recipe.protein / total) * 100}%`, backgroundColor: "#E67E22" }} />
-              <div style={{ width: `${(recipe.carbs   / total) * 100}%`, backgroundColor: "#2D5F5D" }} />
-              <div style={{ width: `${(recipe.fats    / total) * 100}%`, backgroundColor: "#D4A574" }} />
+          {recipe.imageUrl && (
+            <div className="relative h-40 w-full overflow-hidden">
+              <Image
+                src={recipe.imageUrl}
+                alt={recipe.name}
+                fill
+                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-xs" style={{ color: "#E67E22" }}>P {recipe.protein}g</span>
-              <span className="text-xs" style={{ color: "#2D5F5D" }}>C {recipe.carbs}g</span>
-              <span className="text-xs" style={{ color: "#D4A574" }}>F {recipe.fats}g</span>
+          )}
+
+          <div className="p-5">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <span
+                className="text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full capitalize"
+                style={{ backgroundColor: colors.bg, color: colors.color }}>
+                {recipe.cuisine.replace("_", " ")}
+              </span>
+              <Heart size={16} style={{ color: "#E74C3C" }} fill="#E74C3C" />
+            </div>
+
+            <h3
+              className="font-bold text-lg mb-3 leading-tight"
+              style={{ color: "#2C3E50", fontFamily: "var(--font-playfair)" }}>
+              {recipe.name}
+            </h3>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              {[
+                { icon: Clock,   label: `${time}min` },
+                { icon: Flame,   label: `${recipe.calories} kcal` },
+                { icon: ChefHat, label: recipe.difficulty },
+              ].map(({ icon: Icon, label }) => (
+                <div key={label} className="flex items-center gap-1">
+                  <Icon size={12} style={{ color: "#9CA3AF" }} />
+                  <span className="text-xs capitalize" style={{ color: "#6B7280" }}>{label}</span>
+                </div>
+              ))}
+            </div>
+
+            {recipe.tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {recipe.tags.slice(0, 3).map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full px-2 py-0.5 text-xs"
+                    style={{ backgroundColor: "#F8F4EE", color: "#6B7280" }}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4">
+              <div className="flex rounded-full overflow-hidden h-2">
+                <div style={{ width: `${(recipe.protein / total) * 100}%`, backgroundColor: "#E67E22" }} />
+                <div style={{ width: `${(recipe.carbs / total) * 100}%`, backgroundColor: "#2D5F5D" }} />
+                <div style={{ width: `${(recipe.fats / total) * 100}%`, backgroundColor: "#D4A574" }} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-xs" style={{ color: "#E67E22" }}>P {recipe.protein}g</span>
+                <span className="text-xs" style={{ color: "#2D5F5D" }}>C {recipe.carbs}g</span>
+                <span className="text-xs" style={{ color: "#D4A574" }}>F {recipe.fats}g</span>
+              </div>
             </div>
           </div>
         </div>
       </Link>
 
-      {/* Remove button — visible on hover (desktop) or always on touch */}
       <button
         onClick={handleRemove}
         disabled={removing}
         title="Remove from favorites"
-        className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-60 hover:scale-110 active:scale-95"
+        aria-label={`Remove ${recipe.name} from favorites`}
+        className="absolute top-3 right-3 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-80 hover:scale-110 active:scale-95 disabled:opacity-70"
         style={{ backgroundColor: "#FFF0F0", color: "#E74C3C" }}>
         {removing
-          ? <Loader2 size={13} className="animate-spin" />
-          : <X size={13} strokeWidth={2.5} />}
+          ? <Loader2 size={14} className="animate-spin" />
+          : <X size={14} strokeWidth={2.5} />}
       </button>
     </div>
   )

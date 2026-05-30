@@ -6,7 +6,6 @@ import { ShoppingCart, Wallet, CheckCircle, AlertTriangle, XCircle, Clock } from
 import GenerateGroceryButton from "@/components/generate-grocery-button"
 import GroceryItemsList from "@/components/grocery-items-list"
 import PrintGroceryButton from "@/components/print-grocery-button"
-import ReceiptUpload from "@/components/receipt-upload"
 
 export const dynamic = "force-dynamic"
 
@@ -135,10 +134,10 @@ export default async function GroceryPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <ReceiptUpload />
             {groceryList && <PrintGroceryButton />}
-            {/* visual divider between utility actions and primary CTA */}
-            <div className="w-px h-6 self-center mx-1" style={{ backgroundColor: "#E5E7EB" }} />
+            {groceryList && (
+              <div className="w-px h-6 self-center mx-1" style={{ backgroundColor: "#E5E7EB" }} />
+            )}
             <GenerateGroceryButton />
           </div>
         </div>

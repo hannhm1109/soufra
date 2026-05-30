@@ -1,13 +1,13 @@
 // Price accuracy evaluation — thesis experimental results.
 //
-// Compares the resolver's predicted unit price against what users actually paid
-// (ground truth from scanned receipts). Outputs MAE, MAPE, and per-category
-// breakdown suitable for inclusion in a thesis results section.
+// Compares the resolver's predicted unit price against what was actually paid
+// (ground truth from receipts ingested via POST /api/receipts/upload). Outputs
+// MAE, MAPE, and per-category breakdown suitable for a thesis results section.
 //
 // Usage:
 //   npx tsx scripts/evaluate-price-accuracy.ts
 //
-// Requires at least a few scanned receipts with matched ingredients.
+// Requires at least a few ingested receipts with matched ingredients.
 // More receipts → more reliable metrics. Even 20–30 data points is enough
 // for a master's thesis evaluation.
 
@@ -48,8 +48,8 @@ async function main() {
 
   if (receiptLines.length === 0) {
     console.log("\nNo evaluation data yet.")
-    console.log("How to get data: scan grocery receipts through the app.")
-    console.log("Each scanned receipt with a matched ingredient becomes one data point.\n")
+    console.log("How to get data: ingest receipts via POST /api/receipts/upload (GPT-4o-mini Vision OCR).")
+    console.log("Each ingested receipt line with a confident ingredient match becomes one data point.\n")
     process.exit(0)
   }
 

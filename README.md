@@ -8,7 +8,7 @@ Built as part of a Master's thesis project.
 
 ## Overview
 
-The core loop is simple: a user completes a brief onboarding flow, Soufra generates a full 7-day × 3-meal plan calibrated to their calorie target and cuisine preferences, and then produces a priced grocery list based on their city and preferred shopping tier (souk, supermarket, or premium). From there, users can swap individual meals with AI or database alternatives, track leftovers, scan receipts to improve price accuracy over time, and receive a weekly nutrition summary by email.
+The core loop is simple: a user completes a brief onboarding flow, Soufra generates a full 7-day × 3-meal plan calibrated to their calorie target and cuisine preferences, and then produces a priced grocery list based on their city and preferred shopping tier (souk, supermarket, or premium). From there, users can swap individual meals with AI or database alternatives, track leftovers across the week, export the grocery list for shopping, and receive a weekly nutrition summary by email. Behind the scenes, a receipt-OCR pipeline ingests real purchase data to keep the price estimates honest (see Receipt OCR Price-Learning Pipeline).
 
 ---
 
@@ -41,16 +41,17 @@ The core loop is simple: a user completes a brief onboarding flow, Soufra genera
 Five-step flow with Framer Motion directional slide transitions:
 1. Personal info (age, weight, height, biological sex) — used to compute BMR/TDEE via Mifflin-St Jeor
 2. Fitness goal and activity level
-3. Cuisine preferences (Moroccan, Mediterranean, Healthy, French, Middle Eastern)
+3. Cuisine preferences (Moroccan, Mediterranean, Healthy, Middle Eastern, Italian)
 4. Dietary restrictions and allergies
 5. Weekly budget and market tier — with a live budget feasibility assessment
 
 Profile data is validated server-side before any Prisma write. Invalid or missing numeric fields return a 400 rather than silently writing NaN to the database.
 
 ### AI Meal Plan Generation
-- Generates exactly 21 meals (7 days × breakfast / lunch / dinner) in a single GPT-4o-mini call
+- Two-stage pipeline: a lightweight GPT-4o-mini "week strategy" call first plans cuisine distribution, meal anchors, and leftover pairings, then a second call generates all 21 meals (7 days × breakfast / lunch / dinner) against that strategy
+- Validation + self-repair loop: every generated plan is checked for hard constraints (full slot coverage, calorie bounds, macro↔calorie consistency, no duplicate slots/names) and soft variety targets; a plan that fails is sent back to the model for up to 2 repair passes before it is accepted
 - Calorie split: 25% breakfast / 40% lunch / 35% dinner (adjustable in Ramadan mode)
-- Prompt includes the user's calorie target, cuisine mix, allergies, fitness goal, and weekly budget
+- Prompt includes the user's calorie target, cuisine mix, allergies, fitness goal, weekly budget, and a live budget-feasibility assessment
 - Adaptive learning: after 3+ recipe ratings, the prompt is enriched with liked/disliked cuisines, preferred difficulty, preferred recipe styles, and average cook-time preference
 - Cross-plan variety: the last 3 plans are summarized and appended to the prompt to avoid repetition
 - Requires all 21 slots to be valid before committing anything to the database (atomic transaction)
@@ -80,16 +81,16 @@ Toggle in Settings that restructures the entire meal plan:
 Grocery cost estimates are derived from a curated catalog of Moroccan ingredient prices, not generic data:
 - Prices vary by city (Casablanca, Rabat, Marrakech, Tangier, Fes, Agadir) and market tier
 - Three tiers: `souk` (lowest realistic local market prices), `supermarket`, `premium`
-- Budget feasibility is assessed on every grocery generation: `realistic`, `tight`, or `unrealistic`
+- Budget feasibility is assessed on every grocery generation: `on_track`, `tight`, `unrealistic` (or `unknown` when body metrics are missing)
 - Confidence score per item based on price source quality
 - User's city and tier are set during onboarding and editable in Settings
 
-### Receipt OCR and Price Learning
-- "Scan Receipt" button on the grocery page opens the camera on mobile or a file picker on desktop
-- Image is sent as base64 to GPT-4o-mini Vision, which parses item names (translating Arabic/French to English), quantities, and prices
-- Parsed items are saved to the `Receipt` and `ReceiptItem` tables
-- Each recognized item is matched against the `Ingredient` catalog by name and alias
-- Matched items generate new `PricePoint` entries, improving future grocery estimates over time
+### Receipt OCR Price-Learning Pipeline
+> Data-ingestion / research pipeline — not a shipped end-user button in the current build. The backend endpoint (`POST /api/receipts/upload`) feeds real receipt data into the system to improve price estimates and to build the ground truth for the price-accuracy evaluation (see Testing & Evaluation).
+- A receipt image is sent as base64 to GPT-4o-mini Vision, which parses item names (translating Arabic/French to English), quantities, prices, and the printed purchase date
+- Parsed items are saved to the `Receipt` / `ReceiptItem` tables and structured `ReceiptLinePrice` rows
+- Each recognized item is matched against the `Ingredient` catalog using the shared 6-step matcher (manual → exact alias → exact slug/name → prefix → fuzzy Dice → category fallback); only confident matches are kept, so weak matches never pollute the price data
+- Matched items generate `PriceSnapshot` and `PricePoint` entries, improving future grocery estimates and serving as held-out ground truth for the accuracy evaluation
 
 ### Grocery List
 - Auto-generated from the active meal plan's ingredients
@@ -137,12 +138,6 @@ Two print-quality layouts triggered by `window.print()`:
 - Registered via inline script in the root layout
 - `apple-touch-icon` and mobile web app meta tags for iOS home screen installation
 
-### Internationalization
-- English and French supported across navigation, section titles, action buttons, and status messages
-- Language selection persisted in a `lang` cookie (1-year expiry)
-- `LangProvider` context wraps the entire app at the root layout level, so language state is shared across all pages
-- EN / FR pill switcher in the sidebar
-
 ---
 
 ## Project Structure
@@ -152,7 +147,7 @@ soufra/
 ├── app/
 │   ├── api/
 │   │   ├── auth/           # NextAuth handler, forgot-password, reset-password
-│   │   ├── cron/           # Weekly email report (Vercel Cron)
+│   │   ├── cron/           # Vercel Cron: weekly email report + nightly price sync
 │   │   ├── feedback/       # Recipe like/dislike
 │   │   ├── grocery/        # Generate list, check/uncheck items
 │   │   ├── meal-plans/     # Generate, generate-single, swap slot, alternatives
@@ -167,7 +162,7 @@ soufra/
 │   ├── onboarding/         # 5-step onboarding flow
 │   ├── recipes/            # Browse all recipes
 │   ├── settings/           # User settings
-│   └── layout.tsx          # Root layout (fonts, LangProvider, SW registration)
+│   └── layout.tsx          # Root layout (fonts, providers, PWA service-worker registration)
 ├── components/             # All shared UI components
 ├── lib/
 │   ├── auth.ts             # NextAuth configuration
@@ -175,11 +170,14 @@ soufra/
 │   ├── email.ts            # Resend email templates
 │   ├── nutrition.ts        # BMR/TDEE calculation (Mifflin-St Jeor)
 │   ├── onboarding-store.ts # Zustand store for onboarding state
-│   ├── pricing.ts          # Server-side Moroccan pricing engine
-│   ├── prisma.ts           # Prisma client singleton
-│   └── translations.ts     # EN/FR translation objects
+│   ├── pricing.ts          # Server-side Moroccan pricing engine (catalog match + cost estimation)
+│   ├── pricing/            # Pricing v2: DB resolver, ingredient matcher, scrapers, normalization
+│   ├── cuisines.ts         # Supported cuisine list + sanitization
+│   └── prisma.ts           # Prisma client singleton
 ├── prisma/
 │   └── schema.prisma       # Full database schema
+├── scripts/                # Evaluation + maintenance scripts (price accuracy, baseline accuracy, etc.)
+├── tests/                  # DB-free unit tests for the pricing pipeline
 ├── public/
 │   ├── manifest.json       # PWA manifest
 │   ├── sw.js               # Service worker
@@ -201,10 +199,16 @@ soufra/
 | `GroceryItem` | Individual item with price, category, confidence, and checked state |
 | `RecipeFeedback` | Like/dislike per user per recipe |
 | `Ingredient` | Canonical ingredient catalog with aliases |
-| `PricePoint` | Individual price observations (curated, scraped, or from receipts) |
-| `IngredientPriceSnapshot` | Computed reference price per ingredient per city and tier |
-| `Receipt` | Scanned receipt metadata |
+| `PricePoint` | Individual price observations (curated, scraped, or receipt) |
+| `IngredientPriceSnapshot` | Computed reference price per ingredient × city × tier |
+| `PriceSnapshot` | Timestamped per-ingredient price observation from any source (scrape, receipt, baseline) |
+| `BaselineIngredientPrice` | DB-backed fallback price per ingredient × tier × city (replaces the JSON-only baseline) |
+| `SourceCatalogProduct` / `ProductIngredientMatch` | Scraped store products and their links to internal ingredients (6-step matcher output) |
+| `Receipt` | Ingested receipt metadata (store, total, purchase date) |
 | `ReceiptItem` | Parsed line items from a receipt, linked to Ingredient |
+| `ReceiptLinePrice` | Structured receipt line with quantity + unit price — held-out ground truth for the price-accuracy evaluation |
+| `CronLog` | Audit trail for nightly cron runs (job, duration, success, counters, warnings) |
+| `PriceResolutionLog` | Audit trail explaining why a specific price was chosen for each grocery item |
 
 ---
 
@@ -272,6 +276,28 @@ npm run dev
 
 ---
 
+## Testing & Evaluation
+
+### Unit tests
+Pricing-pipeline logic is covered by DB-free unit tests (no database, no API key, no network):
+
+```bash
+npm test
+```
+
+They cover quantity / unit parsing (including the `cl` centilitre case and French decimal-comma quantities like `"1,5 kg"`), unit conversions (`g → kg`, `g → bunch`, `pc → dozen`, `slice → loaf`, plus a deliberate `pc → kg` refusal), end-to-end ingredient cost estimation, the 6-step ingredient matcher, and grocery-list grouping — including a regression guard against merging distinct ingredients such as **bell pepper** (a vegetable) with **black pepper** (a spice).
+
+### Price-accuracy evaluation
+`scripts/evaluate-price-accuracy.ts` compares the resolver's predicted unit prices against the real prices on ingested receipts, **excluding receipt-sourced snapshots to avoid circular validation**. It reports MAE, MAPE, RMSE, signed bias, within-±10 / ±20 / ±30 % accuracy, and per-category / per-confidence-level / per-prediction-source breakdowns suitable for a thesis results section:
+
+```bash
+npx tsx scripts/evaluate-price-accuracy.ts
+```
+
+The receipts that feed this evaluation are ingested via `POST /api/receipts/upload` (see the Receipt OCR pipeline above), not collected through an in-app button.
+
+---
+
 ## Deployment
 
 The app deploys to Vercel. The build command runs `prisma generate` before `next build` to ensure the Prisma client is always up to date:
@@ -280,7 +306,11 @@ The app deploys to Vercel. The build command runs `prisma generate` before `next
 "build": "prisma generate && next build"
 ```
 
-The weekly email report runs as a Vercel Cron job every Monday at 07:00 UTC, configured in `vercel.json`. The endpoint requires a `Bearer` token matching `CRON_SECRET` in production.
+Two Vercel Cron jobs are configured in `vercel.json`:
+- `/api/cron/weekly-report` — every Monday at 07:00 UTC, sends the weekly email digest
+- `/api/cron/price-sync` — every day at 03:00 UTC, scrapes Aswak Assalam store prices and writes `PriceSnapshot` rows; results are logged to `CronLog` for reliability reporting
+
+Both endpoints require a `Bearer` token matching `CRON_SECRET` in production.
 
 ---
 
@@ -290,7 +320,7 @@ The weekly email report runs as a Vercel Cron job every Monday at 07:00 UTC, con
 
 **Atomic meal plan generation.** Deactivating the previous plan, creating the new plan record, creating all 21 recipes, and creating all 21 slots happen inside a single Prisma `$transaction` with a 30-second timeout. If anything fails, nothing is written to the database.
 
-**Receipt OCR as a price learning system.** Scanned receipts do not just display a list to the user — they create `PricePoint` database entries that improve the accuracy of future grocery estimates for every user in the same city and market tier.
+**Receipt OCR as a price-learning pipeline.** Receipt images are parsed by GPT-4o-mini Vision into structured `PriceSnapshot` / `ReceiptLinePrice` rows rather than just a list shown back to the user. This real purchase data improves future grocery estimates for everyone in the same city and market tier, and provides the held-out ground truth for the price-accuracy evaluation. In the current build it runs as a data-ingestion pipeline (the in-app upload button is disabled), keeping the shipped UI honest about what users can actually do themselves.
 
 **Leftover tracking is grocery-aware.** When a dinner slot is marked as having leftovers, the system atomically links the next day's lunch slot (`usesLeftovers: true`). The grocery generation loop skips those slots entirely to avoid purchasing duplicate ingredients.
 

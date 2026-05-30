@@ -119,8 +119,10 @@ export default async function DashboardPage() {
   const avgFats    = Math.round(allSlots.reduce((s, sl) => s + sl.recipe.fats,    0) / daysInPlan)
   const macroTotal = avgProtein + avgCarbs + avgFats || 1
 
-  const budgetPct = activeGrocery && user.weeklyBudget
-    ? Math.min(((activeGrocery.totalCost ?? 0) / user.weeklyBudget) * 100, 100)
+  const hasWeeklyBudget = user.weeklyBudget != null && user.weeklyBudget > 0
+  const groceryTotal = activeGrocery?.totalCost ?? 0
+  const budgetPct = activeGrocery && hasWeeklyBudget
+    ? Math.min((groceryTotal / user.weeklyBudget!) * 100, 100)
     : 0
 
   const printDate = new Date().toLocaleDateString("en-US", {
@@ -142,7 +144,7 @@ export default async function DashboardPage() {
             Week of {weekRange}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-start">
           {user.isRamadan && (
             <span
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
@@ -201,8 +203,8 @@ export default async function DashboardPage() {
           },
           {
             label: "Weekly Budget",
-            value: user.weeklyBudget ? `${user.weeklyBudget} DH` : "—",
-            sub: activeGrocery ? `${activeGrocery.totalCost ?? 0} DH spent` : "No list yet",
+            value: hasWeeklyBudget ? `${user.weeklyBudget} DH` : "—",
+            sub: activeGrocery ? `${groceryTotal} DH estimated` : "No list yet",
             icon: Wallet,
             color: "#27AE60",
             bg: "#F0FFF4",
@@ -526,20 +528,30 @@ export default async function DashboardPage() {
               {/* Budget bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span style={{ color: "#9CA3AF" }}>Budget used</span>
+                  <span style={{ color: "#9CA3AF" }}>
+                    {hasWeeklyBudget ? "Budget used" : "Estimated cost"}
+                  </span>
                   <span className="font-semibold" style={{ color: "#2C3E50" }}>
-                    {activeGrocery.totalCost ?? 0} / {user.weeklyBudget} DH
+                    {hasWeeklyBudget
+                      ? `${groceryTotal} / ${user.weeklyBudget} DH`
+                      : `${groceryTotal} DH`}
                   </span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F3F4F6" }}>
-                  <div
-                    className="h-2 rounded-full transition-all duration-700"
-                    style={{
-                      width: `${budgetPct}%`,
-                      backgroundColor: budgetPct > 90 ? "#E74C3C" : "#27AE60",
-                    }}
-                  />
-                </div>
+                {hasWeeklyBudget ? (
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#F3F4F6" }}>
+                    <div
+                      className="h-2 rounded-full transition-all duration-700"
+                      style={{
+                        width: `${budgetPct}%`,
+                        backgroundColor: budgetPct > 90 ? "#E74C3C" : "#27AE60",
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs" style={{ color: "#9CA3AF" }}>
+                    Add a weekly budget in settings to see budget usage.
+                  </p>
+                )}
               </div>
 
               {/* Item preview */}
