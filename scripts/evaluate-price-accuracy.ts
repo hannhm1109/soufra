@@ -13,6 +13,7 @@
 
 import { PrismaClient } from "@prisma/client"
 import { convertToBaseUnits } from "../lib/pricing/normalize"
+import { selectSnapshotUnitPrice } from "../lib/pricing/resolve"
 
 const prisma = new PrismaClient()
 
@@ -86,9 +87,10 @@ async function main() {
       continue
     }
 
-    // Find the resolver's best non-receipt prediction at time of purchase
-    // (exclude receipt-sourced snapshots to avoid circular validation)
-    const snapshot = await prisma.priceSnapshot.findFirst({
+    // Find all recent non-receipt snapshots for this ingredient.
+    // Apply the same selectSnapshotUnitPrice + minimum-price logic the resolver
+    // uses, so the eval measures what users actually see (not raw DB values).
+    const snapshots = await prisma.priceSnapshot.findMany({
       where: {
         ingredientId: line.ingredientId!,
         source: { not: "receipt" },
@@ -96,30 +98,29 @@ async function main() {
         isPromo: false,
       },
       orderBy: { capturedAt: "desc" },
+      take: 20,
     })
 
     let predictedUnitPrice: number | null = null
     let predictionSource = "none"
     let confidenceLevel = "none"
 
-    if (snapshot) {
-      // Use direct unitPrice if available
-      if (snapshot.unitPrice) {
-        predictedUnitPrice = Number(snapshot.unitPrice)
+    // Pick the lowest plausible unit price across all recent snapshots.
+    // Mirrors selectBestSnapshot: for a budget-planning app the most affordable
+    // available unit price is the most useful prediction.
+    for (const snapshot of snapshots) {
+      const selected = selectSnapshotUnitPrice({
+        rawUnitPrice: snapshot.unitPrice ? Number(snapshot.unitPrice) : null,
+        rawBaseUnit: snapshot.unitBaseUnit,
+        rawPackagePrice: Number(snapshot.packagePrice),
+        packageQty: snapshot.packageQuantityValue,
+        packageUnit: snapshot.packageQuantityUnit,
+        defaultUnit: line.ingredient.defaultUnit,
+      })
+      if (selected !== null && (predictedUnitPrice === null || selected < predictedUnitPrice)) {
+        predictedUnitPrice = selected
         predictionSource = String(snapshot.source)
         confidenceLevel = snapshot.confidenceLevel
-      } else if (snapshot.packageQuantityValue && snapshot.packageQuantityUnit) {
-        // Derive from packagePrice / packageQuantity
-        const pkgQty = convertToBaseUnits(
-          snapshot.packageQuantityValue,
-          snapshot.packageQuantityUnit,
-          line.ingredient.defaultUnit
-        )
-        if (pkgQty && pkgQty > 0) {
-          predictedUnitPrice = Number(snapshot.packagePrice) / pkgQty
-          predictionSource = `${snapshot.source} (derived)`
-          confidenceLevel = snapshot.confidenceLevel
-        }
       }
     }
 

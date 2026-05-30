@@ -86,13 +86,13 @@ function minimumReasonableUnitPrice(defaultUnit: string): number {
   return floors[defaultUnit] ?? 0.2
 }
 
-function isImplausibleUnitPrice(unitPrice: number, defaultUnit: string): boolean {
+export function isImplausibleUnitPrice(unitPrice: number, defaultUnit: string): boolean {
   if (!Number.isFinite(unitPrice) || unitPrice <= 0) return true
   if (unitPrice > 500) return true
   return unitPrice < minimumReasonableUnitPrice(defaultUnit)
 }
 
-function selectSnapshotUnitPrice(params: {
+export function selectSnapshotUnitPrice(params: {
   rawUnitPrice: number | null
   rawBaseUnit: string | null
   rawPackagePrice: number | null
@@ -152,7 +152,7 @@ export async function resolvePrice(
     take: 20,
   })
 
-  const bestSnapshot = selectBestSnapshot(snapshots, city, tier)
+  const bestSnapshot = selectBestSnapshot(snapshots, city, tier, ingredientDefaultUnit)
 
   if (bestSnapshot) {
     const rawUnitPrice = toNum(bestSnapshot.unitPrice)
@@ -282,19 +282,49 @@ type SnapshotRow = {
 function selectBestSnapshot(
   rows: SnapshotRow[],
   city: string | null,
-  tier: MarketTierValue
+  tier: MarketTierValue,
+  defaultUnit: string
 ): SnapshotRow | null {
   const tierMatch = rows.filter((r) => r.marketTier === tier || r.marketTier === null)
   const cityExact = city ? tierMatch.filter((r) => r.city === city) : []
   const national = tierMatch.filter((r) => !r.city)
   const candidates = cityExact.length > 0 ? cityExact : national
-  // Sort: most recent first, then highest confidence
-  candidates.sort((a, b) => {
-    const timeDiff = b.capturedAt.getTime() - a.capturedAt.getTime()
-    if (timeDiff !== 0) return timeDiff
-    return b.confidenceScore.toNumber() - a.confidenceScore.toNumber()
-  })
-  return candidates[0] ?? null
+  if (candidates.length === 0) return null
+
+  // For each candidate compute the plausible unit price, then pick the LOWEST.
+  // For a budget-planning app, the most affordable price per unit is the most
+  // useful signal — avoids over-estimating because a small premium pack happened
+  // to be the most-recently scraped snapshot (e.g. 500g couscous at 32 DH/kg
+  // when a 2kg bulk pack from the same day costs only 11.50 DH/kg).
+  let best: SnapshotRow | null = null
+  let bestPrice = Infinity
+
+  for (const snap of candidates) {
+    const price = selectSnapshotUnitPrice({
+      rawUnitPrice: snap.unitPrice ? snap.unitPrice.toNumber() : null,
+      rawBaseUnit: snap.unitBaseUnit,
+      rawPackagePrice: snap.packagePrice.toNumber(),
+      packageQty: snap.packageQuantityValue,
+      packageUnit: snap.packageQuantityUnit,
+      defaultUnit,
+    })
+    if (price !== null && price < bestPrice) {
+      bestPrice = price
+      best = snap
+    }
+  }
+
+  // If no candidate yielded a plausible price, fall back to most-recent.
+  if (!best) {
+    candidates.sort((a, b) => {
+      const timeDiff = b.capturedAt.getTime() - a.capturedAt.getTime()
+      if (timeDiff !== 0) return timeDiff
+      return b.confidenceScore.toNumber() - a.confidenceScore.toNumber()
+    })
+    return candidates[0] ?? null
+  }
+
+  return best
 }
 
 // Resolve prices for a batch of ingredients in one call (fewer DB round-trips)
@@ -345,7 +375,7 @@ export async function resolvePriceBatch(
   for (const ing of ingredients) {
     // Step 1: fresh snapshots for this ingredient
     const ingSnapshots = freshSnapshots.filter((s) => s.ingredientId === ing.id)
-    const bestSnap = selectBestSnapshot(ingSnapshots as SnapshotRow[], city, tier)
+    const bestSnap = selectBestSnapshot(ingSnapshots as SnapshotRow[], city, tier, ing.defaultUnit)
 
     if (bestSnap) {
       const rawUnitPrice = toNum(bestSnap.unitPrice)
