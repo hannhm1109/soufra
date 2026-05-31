@@ -1,0 +1,62 @@
+flowchart TB
+    classDef user     fill:#2C3E50,stroke:#2C3E50,color:#fff
+    classDef page     fill:#F0F7F7,stroke:#2D5F5D,color:#2C3E50
+    classDef api      fill:#FEF3E8,stroke:#E67E22,color:#2C3E50
+    classDef external fill:#EEF2FF,stroke:#6366F1,color:#2C3E50
+    classDef db       fill:#F0FFF4,stroke:#27AE60,color:#2C3E50
+    classDef cron     fill:#FDF6ED,stroke:#D4A574,color:#2C3E50
+
+    Browser["Navigateur Web\nReact + Framer Motion"]:::user
+    PWA["App Mobile PWA\nmanifest.json + sw.js"]:::user
+
+    subgraph Vercel["Vercel — Hosting & Deploiement"]
+        direction TB
+
+        subgraph NextJS["Next.js 16 App Router"]
+            Pages["Pages SSR/RSC\n/dashboard  /grocery\n/favorites  /history"]:::page
+
+            subgraph APIRoutes["API Routes — Serverless Functions"]
+                R1["POST /api/meal-plans/generate\n2-stage GPT pipeline + validation"]:::api
+                R2["POST /api/grocery/generate\nPricing engine 4 niveaux"]:::api
+                R3["POST /api/meal-plans/generate-single\nSwap 1 repas + repair loop"]:::api
+                R4["POST /api/receipts/upload\nOCR pipeline GPT-4o-mini Vision"]:::api
+                R5["GET /api/cron/price-sync\nNightly 03h00 UTC"]:::api
+                R6["GET /api/cron/weekly-report\nMonday 07h00 UTC"]:::api
+            end
+
+            Prisma["Prisma ORM\nType-safe client — schema.prisma"]:::page
+        end
+
+        CronScheduler["Vercel Cron Scheduler"]:::cron
+    end
+
+    subgraph External["Services Externes"]
+        direction LR
+        GPT["OpenAI GPT-4o-mini\nGeneration repas + OCR"]:::external
+        Resend["Resend\nEmails transactionnels"]:::external
+        Aswak["Aswak Assalam\nScraping HTML + JSON-LD"]:::external
+        Unsplash["Unsplash API\nImages recettes"]:::external
+    end
+
+    subgraph DB["Supabase — PostgreSQL"]
+        direction LR
+        DB1[("User · MealPlan\nMealPlanSlot · Recipe")]:::db
+        DB2[("GroceryList\nGroceryItem")]:::db
+        DB3[("Ingredient · PriceSnapshot\nBaselinePrice · ReceiptLine")]:::db
+        DB4[("CronLog\nPriceResolutionLog")]:::db
+    end
+
+    Browser -- HTTPS --> Pages
+    Browser -- fetch --> APIRoutes
+    PWA -- HTTPS --> Pages
+    Pages -- fetch --> APIRoutes
+
+    APIRoutes -- JSON mode --> GPT
+    APIRoutes -- sendEmail --> Resend
+    APIRoutes -- getImage --> Unsplash
+    CronScheduler -- triggers --> R5
+    CronScheduler -- triggers --> R6
+    R5 -- scrape HTML --> Aswak
+
+    Prisma --> DB1 & DB2 & DB3 & DB4
+    APIRoutes -- queries --> Prisma

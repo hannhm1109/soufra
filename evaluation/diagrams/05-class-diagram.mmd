@@ -1,0 +1,215 @@
+classDiagram
+    direction TB
+
+    %% ── Enums ───────────────────────────────────────────────────────────────
+    class MarketTier {
+        <<enumeration>>
+        souk
+        supermarket
+        premium
+    }
+
+    class MealType {
+        <<enumeration>>
+        breakfast
+        lunch
+        dinner
+    }
+
+    class PriceSourceType {
+        <<enumeration>>
+        curated
+        scrape
+        receipt
+        admin
+    }
+
+    class ConfidenceLevel {
+        <<enumeration>>
+        high
+        medium
+        low
+    }
+
+    class ResolutionMethod {
+        <<enumeration>>
+        exact_snapshot
+        recent_receipt_avg
+        baseline
+        category_fallback
+    }
+
+    %% ── Core domain ─────────────────────────────────────────────────────────
+    class User {
+        +String id
+        +String email
+        +String password
+        +Int calorieTarget
+        +Float weeklyBudget
+        +MarketTier marketTier
+        +String city
+        +String[] cuisines
+        +String[] allergies
+        +Boolean isRamadan
+        +Json learnedPrefs
+    }
+
+    class MealPlan {
+        +String id
+        +String userId
+        +DateTime weekStart
+        +Boolean isActive
+        +Float totalCost
+        +Int totalCalories
+    }
+
+    class MealPlanSlot {
+        +String id
+        +String mealPlanId
+        +String recipeId
+        +Int dayOfWeek
+        +MealType mealType
+        +Boolean hasLeftovers
+        +Boolean usesLeftovers
+        +Int leftoverServings
+        +String whyChosen
+    }
+
+    class Recipe {
+        +String id
+        +String name
+        +String cuisine
+        +Int prepTime
+        +Int cookTime
+        +Int servings
+        +String difficulty
+        +Int calories
+        +Float protein
+        +Float carbs
+        +Float fats
+        +Json ingredients
+        +Json instructions
+        +String[] tags
+        +String imageUrl
+    }
+
+    class RecipeFeedback {
+        +String id
+        +String userId
+        +String recipeId
+        +Boolean liked
+        +DateTime createdAt
+    }
+
+    %% ── Grocery ──────────────────────────────────────────────────────────────
+    class GroceryList {
+        +String id
+        +String userId
+        +Float totalCost
+        +MarketTier marketTier
+        +String city
+        +String budgetStatus
+        +Float priceConfidence
+        +Json estimateSummary
+        +DateTime weekOf
+    }
+
+    class GroceryItem {
+        +String id
+        +String groceryListId
+        +String ingredientId
+        +String name
+        +String quantity
+        +String category
+        +Float price
+        +Float unitPrice
+        +PriceSourceType priceSource
+        +Float priceConfidence
+        +String store
+        +Boolean checked
+    }
+
+    %% ── Pricing system ───────────────────────────────────────────────────────
+    class Ingredient {
+        +String id
+        +String slug
+        +String name
+        +String category
+        +String defaultUnit
+        +Float caloriesPer100g
+        +Boolean isSeasonal
+        +Boolean isActive
+    }
+
+    class PriceSnapshot {
+        +String id
+        +String ingredientId
+        +String source
+        +Decimal packagePrice
+        +Float packageQuantityValue
+        +String packageQuantityUnit
+        +Decimal unitPrice
+        +String unitBaseUnit
+        +ConfidenceLevel confidenceLevel
+        +Decimal confidenceScore
+        +DateTime capturedAt
+        +DateTime expiresAt
+    }
+
+    class BaselineIngredientPrice {
+        +String id
+        +String ingredientId
+        +MarketTier marketTier
+        +String city
+        +Decimal unitPrice
+        +String unit
+        +ConfidenceLevel confidenceLevel
+    }
+
+    %% ── Audit ────────────────────────────────────────────────────────────────
+    class CronLog {
+        +String id
+        +String job
+        +DateTime startedAt
+        +DateTime finishedAt
+        +Int durationMs
+        +Boolean success
+        +Int snapshotsCreated
+        +Int errors
+        +String[] warnings
+    }
+
+    class PriceResolutionLog {
+        +String id
+        +String groceryListId
+        +String ingredientId
+        +ResolutionMethod resolutionMethod
+        +ConfidenceLevel confidenceLevel
+        +String explanation
+        +DateTime createdAt
+    }
+
+    %% ── Relationships ────────────────────────────────────────────────────────
+    User "1" --o "0..*" MealPlan        : generates
+    User "1" --o "0..*" GroceryList     : owns
+    User "1" --o "0..*" RecipeFeedback  : gives
+
+    MealPlan "1" --* "21" MealPlanSlot  : contains
+    MealPlanSlot "0..*" --> "1" Recipe  : references
+    Recipe "1" --o "0..*" RecipeFeedback : receives
+
+    GroceryList "1" --* "0..*" GroceryItem    : contains
+    GroceryItem "0..*" --> "0..1" Ingredient  : identified as
+    GroceryList "1" --o "0..*" PriceResolutionLog : audited in
+
+    Ingredient "1" --o "0..*" PriceSnapshot          : has
+    Ingredient "1" --o "0..*" BaselineIngredientPrice : has
+
+    %% ── Enum associations ────────────────────────────────────────────────────
+    User ..> MarketTier            : uses
+    GroceryList ..> MarketTier     : uses
+    GroceryItem ..> PriceSourceType : uses
+    PriceSnapshot ..> ConfidenceLevel     : uses
+    PriceResolutionLog ..> ResolutionMethod : uses
+    PriceResolutionLog ..> ConfidenceLevel  : uses
+    MealPlanSlot ..> MealType      : uses

@@ -1,0 +1,147 @@
+erDiagram
+    USER {
+        String id PK
+        String email
+        String password
+        Int calorieTarget
+        Float weeklyBudget
+        Enum marketTier "souk|supermarket|premium"
+        StringArray cuisines
+        StringArray allergies
+        Boolean isRamadan
+        Json learnedPrefs
+    }
+
+    MEAL_PLAN {
+        String id PK
+        String userId FK
+        DateTime weekStart
+        Boolean isActive
+        Float totalCost
+    }
+
+    MEAL_PLAN_SLOT {
+        String id PK
+        String mealPlanId FK
+        String recipeId FK
+        Int dayOfWeek "0 to 6"
+        String mealType "breakfast|lunch|dinner"
+        Boolean hasLeftovers
+        Boolean usesLeftovers
+        String whyChosen
+    }
+
+    RECIPE {
+        String id PK
+        String name
+        String cuisine
+        Int calories
+        Float protein
+        Float carbs
+        Float fats
+        Json ingredients
+        Json instructions
+        StringArray tags
+        String imageUrl
+    }
+
+    RECIPE_FEEDBACK {
+        String id PK
+        String userId FK
+        String recipeId FK
+        Boolean liked
+        DateTime createdAt
+    }
+
+    GROCERY_LIST {
+        String id PK
+        String userId FK
+        Float totalCost
+        Enum marketTier
+        String budgetStatus "on_track|tight|unrealistic"
+        Float priceConfidence
+        DateTime weekOf
+    }
+
+    GROCERY_ITEM {
+        String id PK
+        String groceryListId FK
+        String ingredientId FK
+        String name
+        String quantity
+        Float price
+        Enum priceSource "curated|scrape|receipt"
+        Float priceConfidence
+        Boolean checked
+    }
+
+    INGREDIENT {
+        String id PK
+        String slug
+        String name
+        String category
+        String defaultUnit "kg|l|dozen|bunch|pot"
+        Boolean isActive
+    }
+
+    INGREDIENT_ALIAS {
+        String id PK
+        String ingredientId FK
+        String alias
+    }
+
+    PRICE_SNAPSHOT {
+        String id PK
+        String ingredientId FK
+        Enum source "aswak_shop|receipt|baseline"
+        Decimal packagePrice
+        Float packageQuantityValue
+        String packageQuantityUnit
+        Decimal unitPrice
+        String unitBaseUnit
+        Enum confidenceLevel "high|medium|low"
+        DateTime capturedAt
+        DateTime expiresAt
+    }
+
+    BASELINE_INGREDIENT_PRICE {
+        String id PK
+        String ingredientId FK
+        Enum marketTier
+        Decimal unitPrice
+        String unit
+        String city
+    }
+
+    CRON_LOG {
+        String id PK
+        String job
+        Boolean success
+        Int snapshotsCreated
+        Int errors
+        DateTime startedAt
+        Int durationMs
+    }
+
+    PRICE_RESOLUTION_LOG {
+        String id PK
+        String groceryListId FK
+        String ingredientId FK
+        Enum resolutionMethod "exact_snapshot|baseline|category_fallback"
+        Enum confidenceLevel
+        String explanation
+        DateTime createdAt
+    }
+
+    USER ||--o{ MEAL_PLAN : "genere"
+    USER ||--o{ GROCERY_LIST : "possede"
+    USER ||--o{ RECIPE_FEEDBACK : "donne"
+    MEAL_PLAN ||--o{ MEAL_PLAN_SLOT : "contient 21"
+    MEAL_PLAN_SLOT }o--|| RECIPE : "reference"
+    RECIPE ||--o{ RECIPE_FEEDBACK : "recoit"
+    GROCERY_LIST ||--o{ GROCERY_ITEM : "contient"
+    GROCERY_ITEM }o--o| INGREDIENT : "identifie comme"
+    INGREDIENT ||--o{ INGREDIENT_ALIAS : "a"
+    INGREDIENT ||--o{ PRICE_SNAPSHOT : "a"
+    INGREDIENT ||--o{ BASELINE_INGREDIENT_PRICE : "a"
+    GROCERY_LIST ||--o{ PRICE_RESOLUTION_LOG : "audite dans"

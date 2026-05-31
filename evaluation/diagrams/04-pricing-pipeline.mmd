@@ -1,0 +1,64 @@
+flowchart TD
+    classDef input    fill:#2C3E50,stroke:#2C3E50,color:#fff
+    classDef level1   fill:#F0F7F7,stroke:#2D5F5D,color:#2C3E50
+    classDef level2   fill:#FDF6ED,stroke:#D4A574,color:#2C3E50
+    classDef level3   fill:#FEF3E8,stroke:#E67E22,color:#2C3E50
+    classDef level4   fill:#EEF2FF,stroke:#6366F1,color:#2C3E50
+    classDef decision fill:#FFFBEB,stroke:#F59E0B,color:#2C3E50
+    classDef resolved fill:#F0FFF4,stroke:#27AE60,color:#165a2c
+    classDef output   fill:#2D5F5D,stroke:#2D5F5D,color:#fff
+
+    START(["resolvePriceBatch(ingredients, tier, city)"]):::input
+
+    START --> L1Q
+
+    subgraph N1["Niveau 1 — PriceSnapshot  Scrape Aswak Assalam  max 30 jours"]
+        L1Q["PriceSnapshot.findMany\ningredientId + capturedAt >= now-30j + isPromo=false"]:::level1
+        L1S["selectBestSnapshot(rows, city, tier, defaultUnit)\nPour chaque snapshot: calcule selectSnapshotUnitPrice()\nRetourne le snapshot au prix MINIMUM plausible"]:::level1
+        L1C{"Prix plausible\ntrouve ?"}:::decision
+        L1Q --> L1S --> L1C
+    end
+
+    subgraph ULOGIC["selectSnapshotUnitPrice — detail"]
+        direction LR
+        U1["Si rawBaseUnit != defaultUnit\nignorer unitPrice stocke\nex: 0.02 MAD/g pour le riz"]:::level1
+        U2["Deriver depuis package:\npackagePrice / convertToBaseUnits(qty, unit, defaultUnit)"]:::level1
+        U3["Plausibility gates:\nfloor kg=2 MAD — ceiling 500 MAD/unit"]:::level1
+        U4["Si stored / derived > 3x\npreferrer derived"]:::level1
+        U1 --> U2 --> U3 --> U4
+    end
+
+    L1S -. detail .-> ULOGIC
+
+    L1C -->|OUI| R1(["RESOLU\nSource: aswak_shop\nconfidence: high si < 7 jours"]):::resolved
+    L1C -->|NON| L2Q
+
+    subgraph N2["Niveau 2 — IngredientPriceSnapshot  Moyennes calculees"]
+        L2Q["IngredientPriceSnapshot.findMany\ntier + city"]:::level2
+        L2C{"referencePriceMad > 0 ?"}:::decision
+        L2Q --> L2C
+    end
+
+    L2C -->|OUI| R2(["RESOLU\nSource: aggregate\nconfidence: medium"]):::resolved
+    L2C -->|NON| L3Q
+
+    subgraph N3["Niveau 3 — BaselineIngredientPrice  DB seedee depuis JSON"]
+        L3Q["BaselineIngredientPrice.findFirst\ningredientId + marketTier + city"]:::level3
+        L3C{"Baseline\ntrouve ?"}:::decision
+        L3Q --> L3C
+    end
+
+    L3C -->|OUI| R3(["RESOLU\nSource: baseline\nconfidence: low"]):::resolved
+    L3C -->|NON| L4Q
+
+    subgraph N4["Niveau 4 — Catalogue JSON cure  moroccan-ingredient-prices.json"]
+        L4Q["findCatalogEntry(ingredientText, catalog)\nfindGenericFallback() si pas de match dans le catalogue"]:::level4
+        L4C["convertIngredientQuantity(parsed, entry)\nestimatedCost = unitsNeeded x referencePriceMad x tierMultiplier"]:::level4
+        L4Q --> L4C
+    end
+
+    L4C --> R4(["RESOLU\nSource: curated JSON\nconfidence: low"]):::resolved
+
+    R1 & R2 & R3 & R4 --> OUT
+
+    OUT(["ResolvedPrice\nunitPrice · source · resolutionMethod · confidenceLevel · explanation"]):::output

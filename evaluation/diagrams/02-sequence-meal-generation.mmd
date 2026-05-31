@@ -1,0 +1,38 @@
+sequenceDiagram
+    actor User as Utilisateur
+    participant API as Next.js API
+    participant GPT as GPT-4o-mini
+    participant DB as Prisma / DB
+    participant UI as Front-end
+
+    User->>+API: POST /api/meal-plans/generate
+
+    API->>+DB: findUnique(user) + feedback.findMany(last 100)
+    DB-->>-API: user profile, feedbackPatterns, previousRecipeNames
+
+    Note over API: buildAdaptiveSection() — cuisines liked/disliked, difficulty, cook-time<br/>buildBudgetSection() — budget feasibility assessment (on_track / tight / unrealistic)<br/>buildVarietySection() — cuisine targets, previous plan avoid-list
+
+    API->>+GPT: Appel 1 — Strategie semaine (~900 tokens, temperature=0.35)
+    GPT-->>-API: cuisineTargets, breakfastAnchors, lunchAnchors, leftoverPairs
+
+    Note over API: buildMealPlanPrompt() + buildStrategySection()
+
+    API->>+GPT: Appel 2 — 21 repas complets (~12 000 tokens, temperature=0.55)
+    GPT-->>-API: meals [ ...21 recettes JSON... ]
+
+    Note over API: normalizeMeal() x21 — clean les types<br/>syncLeftoverFlags() — lie dinner.hasLeftovers → lunch.usesLeftovers<br/>reconcileNutrition() — rescale macros pour coller aux calories cible<br/>validateMeals() → critical[] + soft[]
+
+    loop Si critical.length > 0 — max 2 tentatives
+        API->>+GPT: Appel repair — corriger les erreurs listees (temperature=0.2)
+        GPT-->>-API: meals [ ...corrigees... ]
+        Note over API: re-validate apres chaque repair
+    end
+
+    API->>+DB: $transaction 30s — MealPlan.create + 21xRecipe.create + 21xMealPlanSlot.create
+    Note over DB: Atomique — tout ou rien. Si echec, rien n'est ecrit.
+    DB-->>-API: planId, created=21
+
+    API->>DB: user.update learnedPrefs — patterns extraits des feedbacks
+
+    API-->>-UI: JSON success, planId, adapted, insights
+    UI-->>User: router.refresh() — affiche le nouveau plan
