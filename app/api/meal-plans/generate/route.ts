@@ -3,7 +3,6 @@ export const maxDuration = 120
 import { auth } from "@/lib/auth"
 import { assessBudgetFeasibility, type MarketTierValue } from "@/lib/budget-utils"
 import {
-  DIFFICULTY_LEVELS,
   getCalorieBounds,
   ingredientHasQuantity,
   normalizeDifficulty,

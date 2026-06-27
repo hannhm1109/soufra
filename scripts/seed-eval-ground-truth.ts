@@ -129,7 +129,7 @@ async function main() {
   console.log(`\nCreated Receipt ${receipt.id} (${SOURCE_STORE}, ${CITY}, ${purchasedAt.toISOString().slice(0, 10)})`)
 
   let inserted = 0
-  let unmatched: string[] = []
+  const unmatched: string[] = []
 
   for (const entry of ready) {
     const ingredient = await prisma.ingredient.findUnique({ where: { slug: entry.slug } })

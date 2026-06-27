@@ -58,7 +58,7 @@ export default async function HistoryPage() {
             })}
           />
 
-          <HistoryList plans={mealPlans} />
+          <HistoryList plans={mealPlans} isRamadan={user.isRamadan} />
         </div>
       ) : (
         <div

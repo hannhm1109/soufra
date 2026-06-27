@@ -36,8 +36,10 @@ type Plan = {
 
 export default function HistoryList({
   plans,
+  isRamadan = false,
 }: {
   plans: Plan[]
+  isRamadan?: boolean
 }) {
   return (
     <motion.div
@@ -50,6 +52,7 @@ export default function HistoryList({
           <HistoryPlanCard
             plan={plan}
             planNumber={plans.length - index}
+            isRamadan={isRamadan}
           />
         </motion.div>
       ))}

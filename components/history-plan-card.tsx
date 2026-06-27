@@ -52,9 +52,11 @@ type Plan = {
 export default function HistoryPlanCard({
   plan,
   planNumber,
+  isRamadan = false,
 }: {
   plan: Plan
   planNumber: number
+  isRamadan?: boolean
 }) {
   const [activeMeal, setActiveMeal] = useState<MealType>("breakfast")
   const [expanded, setExpanded] = useState(plan.isActive)
@@ -65,6 +67,12 @@ export default function HistoryPlanCard({
   const cuisines = [...new Set(plan.slots.map(s => s.recipe.cuisine))]
 
   const slotsForMeal = plan.slots.filter(s => s.mealType === activeMeal)
+  const getMealTypeLabel = (mealType: MealType) => {
+    if (!isRamadan) return mealTypeLabel[mealType]
+    if (mealType === "breakfast") return "Suhoor"
+    if (mealType === "lunch") return "Iftar"
+    return "Post-Iftar"
+  }
 
   return (
     <div
@@ -190,7 +198,7 @@ export default function HistoryPlanCard({
                   color: activeMeal === meal ? "white" : "#6B7280",
                 }}>
                 {mealTypeIcon[meal]}
-                {mealTypeLabel[meal]}
+                {getMealTypeLabel(meal)}
               </button>
             ))}
           </div>

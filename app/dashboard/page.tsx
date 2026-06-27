@@ -91,6 +91,16 @@ export default async function DashboardPage() {
   const days      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
   const mealTypes = ["breakfast", "lunch", "dinner"]
   const mealEmoji = { breakfast: "🌅", lunch: "☀️", dinner: "🌙" }
+  const mealTypeLabel = (mealType: string) => {
+    if (!user.isRamadan) {
+      if (mealType === "breakfast") return "Breakfast"
+      if (mealType === "lunch") return "Lunch"
+      return "Dinner"
+    }
+    if (mealType === "breakfast") return "Suhoor"
+    if (mealType === "lunch") return "Iftar"
+    return "Post-Iftar"
+  }
 
   const getMeal = (dayIndex: number, mealType: string) =>
     activePlan?.slots.find(s => s.dayOfWeek === dayIndex && s.mealType === mealType) ?? null
@@ -410,6 +420,7 @@ export default async function DashboardPage() {
                 }))}
                 todayIndex={todayIndex}
                 days={days}
+                isRamadan={user.isRamadan}
               />
             </div>
 
@@ -449,7 +460,7 @@ export default async function DashboardPage() {
                     <td className="py-1.5 pr-3">
                       <span className="text-[11px] font-semibold uppercase tracking-wide flex items-center gap-1"
                         style={{ color: "#9CA3AF" }}>
-                        {mealEmoji[mealType as keyof typeof mealEmoji]} {mealType}
+                        {mealEmoji[mealType as keyof typeof mealEmoji]} {mealTypeLabel(mealType)}
                       </span>
                     </td>
                     {days.map((_, dayIndex) => {
@@ -753,7 +764,7 @@ export default async function DashboardPage() {
           {(["breakfast", "lunch", "dinner"] as const).map((mt) => (
             <React.Fragment key={mt}>
               <div className="pdf-plan-row-label">
-                {mt === "breakfast" ? "🌅" : mt === "lunch" ? "☀️" : "🌙"}<br />{mt}
+                {mt === "breakfast" ? "🌅" : mt === "lunch" ? "☀️" : "🌙"}<br />{mealTypeLabel(mt)}
               </div>
               {days.map((_, dayIndex) => {
                 const slot = activePlan.slots.find(

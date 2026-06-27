@@ -71,8 +71,8 @@ export default async function GroceryPage() {
     l.resolutionMethod === "baseline" || l.resolutionMethod === "category_fallback"
   ).length
 
-  function formatSyncDate(date: Date): string {
-    const diffMs = Date.now() - date.getTime()
+  function formatSyncDate(date: Date, now: Date): string {
+    const diffMs = now.getTime() - date.getTime()
     if (diffMs < 24 * 60 * 60 * 1000) return "today"
     if (diffMs < 48 * 60 * 60 * 1000) return "yesterday"
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
@@ -112,7 +112,8 @@ export default async function GroceryPage() {
     "Other": "🛒",
   }
 
-  const printDate = new Date().toLocaleDateString("en-US", {
+  const now = new Date()
+  const printDate = now.toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric"
   })
 
@@ -272,7 +273,7 @@ export default async function GroceryPage() {
                 {lastSync && (
                   <span className="text-xs flex items-center gap-1" style={{ color: "#9CA3AF" }}>
                     <Clock size={12} />
-                    Last sync: {formatSyncDate(lastSync.finishedAt)}
+                    Last sync: {formatSyncDate(lastSync.finishedAt, now)}
                   </span>
                 )}
               </div>

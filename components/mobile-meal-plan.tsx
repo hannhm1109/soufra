@@ -33,10 +33,12 @@ export default function MobileMealPlanView({
   slots,
   todayIndex,
   days,
+  isRamadan = false,
 }: {
   slots: MealSlot[]
   todayIndex: number
   days: string[]
+  isRamadan?: boolean
 }) {
   const [selected, setSelected] = useState(todayIndex)
 
@@ -86,13 +88,18 @@ export default function MobileMealPlanView({
       <div className="space-y-3">
         {MEAL_TYPES.map(({ key, label, Icon, color, bg }) => {
           const slot = getMeal(key)
+          const displayLabel =
+            isRamadan && key === "breakfast" ? "Suhoor" :
+            isRamadan && key === "lunch" ? "Iftar" :
+            isRamadan && key === "dinner" ? "Post-Iftar" :
+            label
           return (
             <div key={key}>
               {/* Meal type label */}
               <div className="flex items-center gap-1.5 mb-1.5 px-1">
                 <Icon size={12} style={{ color }} />
                 <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
-                  {label}
+                  {displayLabel}
                 </span>
               </div>
 
@@ -109,7 +116,7 @@ export default function MobileMealPlanView({
                   className="rounded-xl border-2 border-dashed flex items-center justify-center py-4"
                   style={{ borderColor: "#E5E7EB", backgroundColor: bg }}
                 >
-                  <span className="text-xs" style={{ color: "#D1D5DB" }}>No {label.toLowerCase()} planned</span>
+                  <span className="text-xs" style={{ color: "#D1D5DB" }}>No {displayLabel.toLowerCase()} planned</span>
                 </div>
               )}
             </div>
