@@ -10,12 +10,6 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    userId?: string
-  }
-}
-
 export const authConfig = {
   providers: [
     Google({
@@ -34,11 +28,11 @@ export const authConfig = {
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.userId = user.id
+      if (user?.id) token.userId = user.id
       return token
     },
     session({ session, token }) {
-      if (token.userId && session.user) {
+      if (typeof token.userId === "string" && session.user) {
         session.user.id = token.userId
       }
       return session
